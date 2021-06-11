@@ -1,0 +1,9 @@
+[submodule "Spaceng/Dependency/spdlog"]
+	path = Spaceng/Dependency/spdlog
+	url = https://github.com/ALALACH/Spdlog_
+[submodule "Spaceng/Dependency/imgui"]
+	path = Spaceng/Dependency/imgui
+	url = https://github.com/ALALACH/Imgui_Premake
+[submodule "Spaceng/Dependency/glfw"]
+	path = Spaceng/Dependency/glfw
+	url = https://github.com/ALALACH/glfw_premake
