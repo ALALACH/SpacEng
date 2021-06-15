@@ -7,3 +7,6 @@
 [submodule "Spaceng/Dependency/glfw"]
 	path = Spaceng/Dependency/glfw
 	url = https://github.com/ALALACH/glfw_premake
+[submodule "Spaceng/Dependency/asio"]
+	path = Spaceng/Dependency/asio
+	url = https://github.com/boostorg/asio

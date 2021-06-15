@@ -12,14 +12,20 @@ namespace Spaceng {
 		s_Instance = this;
 		m_AppWindow = std::unique_ptr<Window>
 			(Window::Create(WindowSettings(Settings.Name, Settings.WindowWidth, Settings.WindowHeight, Settings.WindowPosx,Settings.WindowPosy)));
-		window1= std::unique_ptr<Window>
+		SE_ASSERT(m_AppWindow, "Window could not be created");
+
+#if 0
+			window1= std::unique_ptr<Window>
 			(Window::Create(WindowSettings(Settings.Name, Settings.WindowWidth, Settings.WindowHeight)));
+#endif
 
 		SE_LOG_WARN("{0}: ({1}/{2})",Settings.Name,Settings.WindowWidth,Settings.WindowHeight)
 
 		m_AppWindow->SetEventCallback(SE_BIND_EVENT(Application::OnEvent));
-		window1->SetEventCallback(SE_BIND_EVENT(Application::OnEvent));
 
+#if 0
+		window1->SetEventCallback(SE_BIND_EVENT(Application::OnEvent));
+#endif
 		SE_LOG_DEBUG("{}: EventCallback Enabled", m_AppWindow->GetTitle())
 
 		m_AppWindow->SetVsync(true); //disable and Debug
@@ -74,15 +80,17 @@ namespace Spaceng {
 		{ 
 			m_Running = false;
 		}
-		else if 
+#if 0
+		else if
 			(window1->GetGlfwWindow() == e.GetWindowID())
 			{ 
 				window1->ShutDownWin();
+				//when updated , stop updating first
 			}
-
-		//m_Running = false;
+#endif
 		return true;
 	}
+
 	bool Application::OnWindowResize(WindowResizeEvent& e)
 	{
 		//todo : Resize viewport & ImGui Pannels
