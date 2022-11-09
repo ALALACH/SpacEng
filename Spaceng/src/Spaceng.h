@@ -7,4 +7,12 @@
 #include "Spaceng/Core/LayerStack.h"
 #include "Spaceng/Core/Event.h"
 
+
+//Window
+#include "Spaceng/src/Spaceng/Window/Window.h"
+//Renderer
+#include "Spaceng/src/Spaceng/Renderer/VulkanRenderer.h"
+#include "Spaceng/src/Spaceng/Renderer/AssetManagerGLTF.h"
+#include "Spaceng/src/Spaceng/Renderer/VulkanMemory.h"
+//Overlay
 #include "Imgui/imgui.h"

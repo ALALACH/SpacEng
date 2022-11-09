@@ -9,10 +9,10 @@ namespace Spaceng {
 		Layer(const std::string Name = "Layer");
 		~Layer();
 		
-		virtual void OnAttach() = 0;
-		virtual void OnDetach() = 0;
-		virtual void OnUpdate(float Timestep) = 0;
-		virtual void OnEvent(Event& Event) = 0;
+		virtual void OnAttach() {}
+		virtual void OnDetach() {}
+		virtual void OnUpdate(float Timestep) {}
+		virtual void OnEvent(Event& Event) {}
 
 		inline const std::string& GetName() const { return m_DebugName;}
 

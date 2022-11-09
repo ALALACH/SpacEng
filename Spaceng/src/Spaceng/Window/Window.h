@@ -2,6 +2,7 @@
 #include "PCH.h"
 #include "Spaceng/Core/Event.h"
 #include "Spaceng/Core/Core.h"
+#include "Spaceng/Renderer/VulkanRenderer.h"
 
 
 namespace Spaceng {
@@ -34,14 +35,18 @@ namespace Spaceng {
 		virtual ~Window() {}
 		virtual void ShutDownWin() = 0;
 
-		virtual void OnUpdate(float Timestep) = 0;
+		virtual void InitWindow(VulkanRenderer* Renderer) {};
+		virtual void PollEvents(float Timestep) = 0;
 
 		virtual std::pair<uint32_t, uint32_t> GetSize() const = 0;
 		virtual std::pair<int, int> GetPos() const = 0;
 		virtual void SetPos(int Xpos, int Ypos) =0;
 		virtual void SetToFullScreen() = 0;
-		virtual uint32_t GetWidth()  const =0 ;
-		virtual uint32_t GetHeight() const = 0 ;
+		virtual uint32_t* GetWidth()  const =0 ;
+		virtual uint32_t* GetHeight() const = 0 ;
+		virtual bool GetVsync()  const = 0;
+		virtual bool GetFullScreen() const = 0;
+		virtual bool GetUIOverlay() const = 0;
 
 
 		virtual void SetEventCallback(const EventCallbackFn& callback) = 0;
@@ -52,6 +57,6 @@ namespace Spaceng {
 		virtual const std::string GetTitle() const = 0;
 		virtual void UpdateTittle(const std::string tittle) = 0;
 
-		virtual void* GetGlfwWindow() const = 0;
+		virtual GLFWwindow* GetGlfwWindow() const = 0;
 	};
 }

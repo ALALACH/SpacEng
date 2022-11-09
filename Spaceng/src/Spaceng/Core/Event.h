@@ -24,18 +24,18 @@ namespace Spaceng {
 
 	class EventDispatcher
 	{
-		template<typename _Event_binded_fn>
-		using EventFn = std::function<bool(_Event_binded_fn&)>;
+		template<typename Fn>
+		using EventFn = std::function<bool(Fn&)>;
 	public:
 		EventDispatcher(Event& event)
 			:m_Event(event) {}
 
-		template<typename _Event_Class_Type>
-		bool Dispatch(EventFn<_Event_Class_Type> function)
+		template<typename T>
+		bool Dispatch(EventFn<T> function)
 		{
-			if (m_Event.GetEventType()== _Event_Class_Type::GetStaticType())
+			if (m_Event.GetEventType() == T::GetStaticType())
 			{ 
-			m_Event.Handeled = function(*(_Event_Class_Type*)&m_Event);
+			m_Event.Handeled = function(*(T*)&m_Event);
 			return true;
 			}
 			return false;

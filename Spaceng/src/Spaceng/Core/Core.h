@@ -3,7 +3,7 @@
 
 //PLATFORM
 #ifndef SE_PLATFORM_WIN
-#define SE_PLATFORM_WIN
+#error Unsupported Platform
 #endif
 
 //BUILD
@@ -12,7 +12,7 @@
 //Event
 #define SE_BIND_EVENT(fn) std::bind(&##fn, this, std::placeholders::_1)
 
-// LOG
+// LOG Spaceng
 #define SE_LOG_TRACE(...)		Spaceng::log::GetLogger()->trace(__VA_ARGS__); //not functional
 #define SE_LOG_INFO(...)		Spaceng::log::GetLogger()->info(__VA_ARGS__);
 #define SE_LOG_WARN(...)		Spaceng::log::GetLogger()->warn(__VA_ARGS__);

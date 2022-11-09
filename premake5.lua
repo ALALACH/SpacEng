@@ -1,3 +1,5 @@
+include "./vendor/premake_customization/solution_items.lua"
+
 workspace "Spaceng"
 	architecture "x64"
 	targetdir "build"
@@ -9,15 +11,33 @@ workspace "Spaceng"
 		"Release",
 		"Dist"
 	}
+	solution_items
+	{
+		".editorconfig"
+	}
+	filter "language:C++ or language:C"
+		architecture "x86_64"
+	filter ""
+
 
 outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
+VULKAN_SDK = os.getenv("VULKAN_SDK")
 
 --includeDir init
 IncludeDir = {}
 IncludeDir["glfw"] = "Spaceng/Dependency/glfw"
 IncludeDir["imgui"] = "Spaceng/Dependency/imgui"
 IncludeDir["spdlog"] = "Spaceng/Dependency/spdlog"
+IncludeDir["VulkanSDK"] = "%{VULKAN_SDK}/Include"
+IncludeDir["optick"] = "Spaceng/Dependency/optick"
 
+
+LibraryDir = {}
+LibraryDir["VulkanSDK"] = "%{VULKAN_SDK}/Lib"
+
+Library = {}
+Library["Vulkan"] = "%{LibraryDir.VulkanSDK}/vulkan-1.lib"
+Library["VulkanUtils"] = "%{LibraryDir.VulkanSDK}/VkLayer_utils.lib"
 
 group "Dependencies"
 include "Spaceng/Dependency/glfw"
@@ -43,7 +63,11 @@ project "Spaceng"
 		"%{prj.name}/Dependency",
 		"%{IncludeDir.glfw}",
 		"%{IncludeDir.imgui}",
-		"%{IncludeDir.spdlog}"
+		"%{IncludeDir.spdlog}",
+		"%{IncludeDir.optick}",
+		"%{IncludeDir.Vulkan}",
+		"%{IncludeDir.VulkanSDK}",
+		"%{IncludeDir.VulkanSDK_LocalInclude}",
 	}
 
 	files 
@@ -57,7 +81,9 @@ project "Spaceng"
 	links 
 	{ 
 		"glfw",
-		"imgui"
+		"imgui",
+		"%{Library.Vulkan}",
+		"%{Library.VulkanUtils}",
 	}
 
 	filter "system:windows"
@@ -72,10 +98,18 @@ project "Spaceng"
 	filter "configurations:Debug"
 		defines "SE_DEBUG"
 		symbols "On"
+		links
+		{
+	
+		}
 				
 	filter "configurations:Release"
 		defines "SE_RELEASE"
 		optimize "On"
+		links
+		{
+		
+		}
 
 	filter "configurations:Dist"
 		defines "SE_DIST"
@@ -105,7 +139,9 @@ project "App"
 	{
 		"%{prj.name}/src",
 		"Spaceng/src",
-		"Spaceng/Dependency"
+		"Spaceng/Dependency",
+		"%{IncludeDir.Vulkan}",
+		"%{IncludeDir.VulkanSDK}"
 	}
 	
 	files 

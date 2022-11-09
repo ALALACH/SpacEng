@@ -1,8 +1,15 @@
 #pragma once
+
 #include "Core.h"
-#include "Spaceng/Window/Window.h"
 #include "LayerStack.h"
 #include "Event.h"
+
+#include "Spaceng/Window/Window.h"
+#include <glfw/include/GLFW/glfw3.h>
+
+#include "Spaceng/Renderer/VulkanRenderer.h"
+
+#include "Spaceng/GUI/ImGuiLayer.h"
 
 namespace Spaceng {
 
@@ -18,12 +25,13 @@ namespace Spaceng {
 	public:
 		Application(const ApplicationSettings& Settings = { "SpacEng",1280,720,400,200 });
 		virtual ~Application();
+
 		void Run();
-		void OnUpdate();
 		void OnEvent(Event& Event);
 
 		void PushLayer(Layer* layer);
 		void PushOverlay(Layer* layer);
+		void PopLayer(Layer* layer);
 
 		bool OnWindowClose(WindowCloseEvent& e);
 		bool OnWindowResize(WindowResizeEvent& e);
@@ -32,19 +40,37 @@ namespace Spaceng {
 		static inline Application& Get() { return *s_Instance; }
 		inline Window& GetWindow() { return *m_AppWindow; }
 
-		//@poly
+		// Implemented in Client
 		virtual void OnInit() {}
 		virtual void OnShutdown() {}
 
-
 	private:
-		std::unique_ptr<Window> m_AppWindow , window1;
 		static Application* s_Instance;
+		LayerStack m_LayerStack;
+
+		VulkanRenderer* m_Renderer;
+		std::unique_ptr<Window> m_AppWindow;
+
+		ImGuiLayer* m_ImGuiLayer;
+
 		bool m_Running = true;
 		bool m_Minimized = false;
 		float m_Timestep=0.0f, m_lastframetime=0.0f;
-		LayerStack m_LayerStack;
 
+
+
+		// Renderer Specefic
+		std::vector<const char*> EnabledInstanceextensions =
+		{
+		};
+		std::vector<const char*> enabledDeviceExtensions =
+		{
+			VK_KHR_SWAPCHAIN_EXTENSION_NAME
+		};
+		VkPhysicalDeviceFeatures enabledDeviceFeatures{};
+		
+
+		
 	};
 
 	//implemented in client

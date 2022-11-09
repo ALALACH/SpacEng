@@ -15,17 +15,23 @@ namespace Spaceng {
 	}
 	
 	WindowsWindow::WindowsWindow(const WindowSettings& Settings)
+		:m_Settings(Settings)
 	{
-		Init(Settings);
 	}
-	
-	void WindowsWindow::Init(const WindowSettings& Settings)
+
+	WindowsWindow::~WindowsWindow()
 	{
-		m_Data.Tittle = Settings.Tittle;
-		m_Data.Width = Settings.Width;
-		m_Data.Height = Settings.Height;
-		m_Data.posx = Settings.Posx;
-		m_Data.posy = Settings.Posy;
+		glfwTerminate();
+		s_glfwInit = false;
+	}
+
+	void WindowsWindow::InitWindow(VulkanRenderer* Renderer)
+	{
+		Window_Data.Tittle = m_Settings.Tittle;
+		Window_Data.Width = m_Settings.Width;
+		Window_Data.Height = m_Settings.Height;
+		Window_Data.posx = m_Settings.Posx;
+		Window_Data.posy = m_Settings.Posy;
 
 		if(!s_glfwInit)
 		{ 
@@ -33,12 +39,19 @@ namespace Spaceng {
 			glfwSetErrorCallback(glfw_error_callback);
 			s_glfwInit = true;
 		}
+		SE_ASSERT(glfwVulkanSupported(), "GLFW not supported");
+		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-		m_Window = glfwCreateWindow(m_Data.Width, m_Data.Height, m_Data.Tittle.c_str(), nullptr, nullptr);
-		glfwSetWindowPos(m_Window, m_Data.posx, m_Data.posy);
 
-		glfwMakeContextCurrent(m_Window);
-		glfwSetWindowUserPointer(m_Window, &m_Data);
+		m_Window = glfwCreateWindow(Window_Data.Width, Window_Data.Height, Window_Data.Tittle.c_str(), nullptr, nullptr);
+		glfwSetWindowPos(m_Window, Window_Data.posx, Window_Data.posy);
+
+		
+		Renderer->InitSurface(m_Window);
+		Renderer->CreateSwapChain(&Window_Data.Width,&Window_Data.Height,Window_Data.Vsync);
+
+		//glfwMakeContextCurrent(m_Window);
+		glfwSetWindowUserPointer(m_Window, &Window_Data);
 
 
 		/* Setting glfw Callbacks */
@@ -127,25 +140,23 @@ namespace Spaceng {
 		
 	}
 
-	WindowsWindow::~WindowsWindow()
-	{
-	}
 
 	void WindowsWindow::ShutDownWin()
 	{
 		glfwDestroyWindow(m_Window);
 	}
 
-	void WindowsWindow::OnUpdate(float Timestep)
+	void WindowsWindow::PollEvents(float Timestep)
 	{
 		glfwPollEvents();
-		glfwSwapBuffers(m_Window);
 	}
+	
+	
 
 	std::pair<int, int> WindowsWindow::GetPos() const
 	{
-		glfwGetWindowPos(m_Window, &m_Data.posx, &m_Data.posy);
-		return { m_Data.posx, m_Data.posy };
+		glfwGetWindowPos(m_Window, &Window_Data.posx, &Window_Data.posy);
+		return { Window_Data.posx, Window_Data.posy };
 	}
 	
 	void WindowsWindow::SetPos(int Xpos , int Ypos)
@@ -163,18 +174,17 @@ namespace Spaceng {
 			glfwSwapInterval(1);
 		else
 			glfwSwapInterval(0);
-		m_Data.Vsync = Enabled;	
-		SE_ASSERT(m_Data.Vsync,"vSync not enabled Err");
+		Window_Data.Vsync = Enabled;	
 	}
 
 	bool WindowsWindow::IsVsync() const
 	{
-		return m_Data.Vsync;
+		return Window_Data.Vsync;
 	}
 
 	void WindowsWindow::UpdateTittle(const std::string tittle)
 	{
-		m_Data.Tittle = tittle;
-		glfwSetWindowTitle(m_Window, m_Data.Tittle.c_str());
+		Window_Data.Tittle = tittle;
+		glfwSetWindowTitle(m_Window, Window_Data.Tittle.c_str());
 	}
 }

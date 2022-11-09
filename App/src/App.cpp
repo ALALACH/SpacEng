@@ -1,23 +1,28 @@
-#include "Spaceng.h"
+#include "Spaceng/Core/Application.h"
+
+//Entry
 #include "EntryPoint.h"
+
+#include "PCH.h"
 #include "EditorLayer.h"
 
 
 class App : public Spaceng::Application
 {
 public:
-	App()
-	{
+	Spaceng::EditorLayer* m_EditorLayer;
 
-	}
+	
 	virtual void OnInit() override
 	{
-		PushLayer(new Spaceng::EditorLayer("EditorLayer"));
+		m_EditorLayer = new Spaceng::EditorLayer("EditorLayer");
+		PushLayer(m_EditorLayer);
 	}	
 	
 	virtual void OnShutdown() override
 	{
-		
+		PopLayer(m_EditorLayer);
+		delete m_EditorLayer;
 	}
 };
 static Spaceng::Application* Spaceng::CreateApplication()
