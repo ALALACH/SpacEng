@@ -10,3 +10,6 @@
 [submodule "Spaceng/Dependency/asio"]
 	path = Spaceng/Dependency/asio
 	url = https://github.com/boostorg/asio
+[submodule "Spaceng/Dependency/optick"]
+	path = Spaceng/Dependency/optick
+	url = https://github.com/bombomby/optick
