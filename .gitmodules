@@ -15,7 +15,7 @@
 	url = https://github.com/bombomby/optick
 [submodule "Spaceng/Dependency/glm"]
 	path = Spaceng/Dependency/glm
-	url = https://github.com/ALALACH/glm
+	url = https://github.com/Groovounet/glm
 
 
 
