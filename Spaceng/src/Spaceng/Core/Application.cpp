@@ -21,8 +21,6 @@ namespace Spaceng {
 		m_AppWindow->InitWindow(m_Renderer);
 		
 
-		
-
 
 		SE_LOG_INFO("Window : ""{0}: ({1}/{2})", Settings.Name, Settings.WindowWidth, Settings.WindowHeight)
 			m_AppWindow->SetEventCallback(SE_BIND_EVENT(Application::OnEvent));

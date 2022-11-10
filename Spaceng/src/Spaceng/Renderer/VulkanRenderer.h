@@ -16,7 +16,6 @@ namespace Spaceng
 	class VulkanRenderer
 	{
 	public:
-		VulkanRenderer();
 		~VulkanRenderer();
 		void InitRenderer(std::vector<const char*> EnabledInstanceextensions, std::vector<const char*> EnabledDeviceextensions,
 			VkPhysicalDeviceFeatures EnableddeviceFeatures);
@@ -32,7 +31,9 @@ namespace Spaceng
 
 		void InitSurface(GLFWwindow* Window);
 		void CreateSwapChain(uint32_t* width, uint32_t* height, bool vsync);
-
+		void prepareUniformBuffer(VkBufferUsageFlags usageflags, VkMemoryPropertyFlags memoryPorpertyflags, VkDeviceSize size, VkBuffer* buffer,
+			VkDeviceMemory* memory, VkDescriptorBufferInfo BufferDescriptor, void* mapped, bool mapAccess, bool DescriptorAcess);
+		void cleanUpUniformBuffer(VkDevice Device, VkBuffer* buffer, VkDeviceMemory* memory);
 
 		VkPipelineShaderStageCreateInfo LoadShader(std::string Filename, VkShaderStageFlagBits Stage);
 		void Refresh(uint32_t* width, uint32_t* height, bool vsync);
@@ -51,7 +52,7 @@ namespace Spaceng
 
 	public:
 		friend class Vkgltf;
-	private:
+	protected:
 		//Instance
 		 VkInstance Instance;
 		 std::unordered_set<std::string> supportedInstanceExtensions;
@@ -113,7 +114,7 @@ namespace Spaceng
 		 VkPipelineStageFlags submitPipelineStages = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
 		 //Renderpass
-		 VkRenderPass Renderpass;
+		 VkRenderPass Renderpass =VK_NULL_HANDLE;
 
 		 //Framebuffer
 		 std::vector<VkFramebuffer> FrameBuffer;

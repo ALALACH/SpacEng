@@ -5,12 +5,16 @@
 
 namespace Spaceng
 {
-	class VulkanMemory
+	class VulkanBufferMemory
 	{
-		VkResult AllocateBufferMemory(VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags memoryPropertyFlags, VkDeviceSize size,
-			VkBuffer* buffer, VkDeviceMemory* memory, void* data, VkDevice Device, VkPhysicalDeviceMemoryProperties DeviceMemProperties);
+	public:
+		static VkResult AllocateBufferMemory(VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags memoryPropertyFlags, VkDeviceSize size,
+			VkBuffer* buffer, VkDeviceMemory* memory, VkDescriptorBufferInfo BufferDescriptor, void* mapped, VkDevice Device, VkPhysicalDeviceMemoryProperties DeviceMemProperties, void* data = nullptr
+			,bool DescriptorAccess=false, bool mapAccess = false);
+
+		static void DeallocateBufferMemory(VkDevice Device, VkBuffer* buffer, VkDeviceMemory* memory);
 	
-		uint32_t getMemoryType(VkPhysicalDeviceMemoryProperties DeviceMemProperties, VkMemoryPropertyFlags memoryPropertyFlags,
+		static uint32_t getMemoryType(VkPhysicalDeviceMemoryProperties DeviceMemProperties, VkMemoryPropertyFlags memoryPropertyFlags,
 			VkMemoryRequirements memReq, VkBool32* memTypeFound);
 	};
 

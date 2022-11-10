@@ -20,6 +20,7 @@ namespace Spaceng
 
 	void EditorLayer::OnAttach()
 	{
+		
 	}
 
 	void EditorLayer::OnDetach()

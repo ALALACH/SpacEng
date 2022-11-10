@@ -7,8 +7,10 @@
 namespace Spaceng
 {
 
-	VkResult VulkanMemory::AllocateBufferMemory(VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags memoryPropertyFlags, VkDeviceSize size,
-		VkBuffer* buffer, VkDeviceMemory* memory, void* data, VkDevice Device, VkPhysicalDeviceMemoryProperties DeviceMemoryProperties)
+	VkResult VulkanBufferMemory::AllocateBufferMemory(
+		VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags memoryPropertyFlags, VkDeviceSize size,
+		VkBuffer* buffer, VkDeviceMemory* memory, VkDescriptorBufferInfo BufferDescriptor, void* mapped , VkDevice Device,
+		VkPhysicalDeviceMemoryProperties DeviceMemoryProperties,void* data, bool DescriptorAccess ,bool mapAccess)
 	{
 		VkBufferCreateInfo BufferCreateCI{};
 		BufferCreateCI.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -37,7 +39,6 @@ namespace Spaceng
 
 		if (data != nullptr)
 		{
-			void* mapped;
 			VK_CHECK_RESULT(vkMapMemory(Device, *memory, 0, size, 0, &mapped));
 			memcpy(mapped, data, size);
 			// If host coherency hasn't been requested, do a manual flush to make writes visible
@@ -48,11 +49,20 @@ namespace Spaceng
 				mappedRange.memory = *memory;
 				mappedRange.offset = 0;
 				mappedRange.size = size;
-				vkFlushMappedMemoryRanges(Device, 1, &mappedRange);
+				VK_CHECK_RESULT(vkFlushMappedMemoryRanges(Device, 1, &mappedRange));
 			}
 			vkUnmapMemory(Device, *memory);
 		}
-
+		if (!data && mapAccess) //UniformBuffers Specefic
+		{
+			VK_CHECK_RESULT(vkMapMemory(Device, *memory, 0, size, 0, &mapped));
+		}
+		if (DescriptorAccess)
+		{
+			BufferDescriptor.buffer = *buffer;
+			BufferDescriptor.offset = 0;
+			BufferDescriptor.range = VK_WHOLE_SIZE;
+		}
 		// Attach the memory to the buffer object
 		VK_CHECK_RESULT(vkBindBufferMemory(Device, *buffer, *memory, 0));
 
@@ -60,7 +70,15 @@ namespace Spaceng
 	}
 
 
-	uint32_t VulkanMemory::getMemoryType(VkPhysicalDeviceMemoryProperties DeviceMemoryProperties, VkMemoryPropertyFlags memoryPropertyFlags,
+	void VulkanBufferMemory::DeallocateBufferMemory(VkDevice Device ,VkBuffer* buffer , VkDeviceMemory* memory)
+	{
+		vkDestroyBuffer(Device, *buffer, nullptr);
+		vkFreeMemory(Device, *memory, nullptr);
+		//VK_SPEC : If a memory object is mapped at the time it is freed, it is implicitly unmapped.
+	}
+
+
+	uint32_t VulkanBufferMemory::getMemoryType(VkPhysicalDeviceMemoryProperties DeviceMemoryProperties, VkMemoryPropertyFlags memoryPropertyFlags,
 		VkMemoryRequirements memReq, VkBool32* memTypeFound)
 	{
 		for (uint32_t i = 0; i < DeviceMemoryProperties.memoryTypeCount; i++)
@@ -69,8 +87,7 @@ namespace Spaceng
 			{
 				if ((DeviceMemoryProperties.memoryTypes[i].propertyFlags & memoryPropertyFlags) == memoryPropertyFlags)
 				{
-					if (memTypeFound)
-					{
+					if (memTypeFound){
 						*memTypeFound = true;
 					}
 					return i;

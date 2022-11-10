@@ -1,12 +1,13 @@
-#include "Spaceng/Core/Application.h"
-
 //Entry
+#include "Spaceng/Core/Application.h"
 #include "EntryPoint.h"
+
 
 #include "PCH.h"
 #include "EditorLayer.h"
 
-
+namespace Spaceng
+{
 class App : public Spaceng::Application
 {
 public:
@@ -28,4 +29,5 @@ public:
 static Spaceng::Application* Spaceng::CreateApplication()
 {
 	return new App();
+}
 }

@@ -5,7 +5,6 @@ namespace Spaceng
 {
 
 
-	VulkanRenderer::VulkanRenderer() {};
 	VulkanRenderer::~VulkanRenderer()
 	{
 		if (Swapchain != VK_NULL_HANDLE)
@@ -25,15 +24,17 @@ namespace Spaceng
 
 		vkFreeCommandBuffers(Device, Commandpool, static_cast<uint32_t>(CommandBuffers.size()), CommandBuffers.data());
 		vkDestroyCommandPool(Device, Commandpool, nullptr);
-		if (Renderpass != VK_NULL_HANDLE)
-		{
-			vkDestroyRenderPass(Device, Renderpass, nullptr);
-		}
+
 		for (uint32_t i = 0; i < FrameBuffer.size(); i++)
 		{
 			vkDestroyFramebuffer(Device, FrameBuffer[i], nullptr);
 		}
 
+		if (Renderpass != VK_NULL_HANDLE)
+		{
+			vkDestroyRenderPass(Device, Renderpass, nullptr);
+		}
+		
 		for (auto& shaderModule : ShaderModules)
 		{
 			vkDestroyShaderModule(Device, shaderModule, nullptr);
@@ -654,6 +655,8 @@ namespace Spaceng
 		}
 
 		//render pass
+		vkDestroyRenderPass(Device, Renderpass, nullptr);
+
 		VkAttachmentDescription colorAttachmentDescription{};
 		colorAttachmentDescription.format = colorFormat;
 		colorAttachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -731,6 +734,21 @@ namespace Spaceng
 		for (uint32_t i = 0; i < QueueFences.size(); i++)
 			VK_CHECK_RESULT(vkCreateFence(Device, &FenceCI, nullptr, &QueueFences[i]));
 	}
+
+
+	void VulkanRenderer::prepareUniformBuffer(VkBufferUsageFlags usageflags,VkMemoryPropertyFlags memoryPorpertyflags
+	,VkDeviceSize size,VkBuffer* buffer, VkDeviceMemory* memory, VkDescriptorBufferInfo BufferDescriptor, void* mapped,bool mapAccess, bool DescriptorAcess)
+	{
+		VulkanBufferMemory::AllocateBufferMemory(usageflags, memoryPorpertyflags, size, buffer, memory, BufferDescriptor,mapped,
+			Device, deviceMemoryProperties, nullptr, DescriptorAcess, mapAccess);
+	}
+
+
+	void VulkanRenderer::cleanUpUniformBuffer(VkDevice Device ,VkBuffer* buffer, VkDeviceMemory* memory)
+	{
+		VulkanBufferMemory::DeallocateBufferMemory(Device, buffer, memory);
+	}
+
 
 
 	VkPipelineShaderStageCreateInfo VulkanRenderer::LoadShader(std::string Filename, VkShaderStageFlagBits Stage)

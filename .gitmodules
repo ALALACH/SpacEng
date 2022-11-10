@@ -13,3 +13,10 @@
 [submodule "Spaceng/Dependency/optick"]
 	path = Spaceng/Dependency/optick
 	url = https://github.com/bombomby/optick
+[submodule "Spaceng/Dependency/glm"]
+	path = Spaceng/Dependency/glm
+	url = https://github.com/ALALACH/glm
+
+
+
+
