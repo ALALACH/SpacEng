@@ -166,11 +166,11 @@ namespace Spaceng
 
 		struct Properties
 		{
-			uint32_t apiVersion;
-			uint32_t driverVersion;
-			uint32_t VendorID;
-			uint32_t DeviceID;
-			const char* DeviceName;
+			uint32_t apiVersion = 0;
+			uint32_t driverVersion = 0;
+			uint32_t VendorID = 0;
+			uint32_t DeviceID = 0;
+			const char* DeviceName = nullptr;
 		}GPU_Properties;
 
 		for (uint32_t i = 0; i < gpuCount; i++) {
@@ -736,31 +736,38 @@ namespace Spaceng
 	}
 
 
-	void VulkanRenderer::prepareUniformBuffer(VkGLTFAsset& Asset,bool mapAccess, bool descriptorAcess)
+	void VulkanRenderer::prepareUniformBuffer(VkGLTFAsset* Asset,bool mapAccess, bool descriptorAcess)
 	{
-		VulkanBufferMemory::AllocateBufferMemory(Asset.UniformBuffer, Device, deviceMemoryProperties, nullptr, descriptorAcess, mapAccess);
+		VulkanBufferMemory::AllocateBufferMemory(Asset->UniformBuffer, Device, deviceMemoryProperties, descriptorAcess, mapAccess, nullptr);
 		updateUniformBuffer(Asset);
 	}
 
 
-	void VulkanRenderer::updateUniformBuffer(VkGLTFAsset& Asset)
+	void VulkanRenderer::updateUniformBuffer(VkGLTFAsset* Asset)
 	{
 		//update UBO Matrices
-		memcpy(Asset.UniformBuffer.mapped, &Asset.UBOMatrices, sizeof(Asset.UBOMatrices));
+		memcpy(Asset->UniformBuffer.mapped, &Asset->UBOMatrices, sizeof(Asset->UBOMatrices));
 	}
 
-	void VulkanRenderer::cleanUpUniformBuffer(VkDevice Device ,VkBuffer* buffer, VkDeviceMemory* memory)
+	void VulkanRenderer::cleanUpBuffer(VkDevice Device ,VkBuffer* buffer, VkDeviceMemory* memory)
 	{
 		VulkanBufferMemory::DeallocateBufferMemory(Device, buffer, memory);
 	}
 
-	VkGLTFAsset* VulkanRenderer::PrepareAsset(VkGLTFAsset* Asset, AssetType Type , std::string filename)
+	void VulkanRenderer::PrepareAsset(VkGLTFAsset* Asset, AssetType Type , std::string filename)
 	{
-		
 		Asset->LoadFromFile(filename);
-		prepareUniformBuffer(*Asset);
-		return Asset;
+		prepareUniformBuffer(Asset);
 	}
+
+	void VulkanRenderer::CleanUpAsset(VkGLTFAsset* Asset)
+	{
+		cleanUpBuffer(Device, &Asset->UniformBuffer.buffer, &Asset->UniformBuffer.memory); //Uniform Bufffer
+		//destroy Draw Buffers
+		//destroy Descriptors / Pipeline Dependencies...
+		//destroy commandBuffers
+	}
+
 
 	VkPipelineShaderStageCreateInfo VulkanRenderer::LoadShader(std::string Filename, VkShaderStageFlagBits Stage)
 	{

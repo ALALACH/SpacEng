@@ -19,8 +19,8 @@ namespace Spaceng
 	class VulkanBufferMemory
 	{
 	public:
-		static VkResult AllocateBufferMemory(Buffer& Buffer, VkDevice Device, VkPhysicalDeviceMemoryProperties DeviceMemProperties, void* data = nullptr
-			,bool descriptorAccess, bool mapAccess);
+		static VkResult AllocateBufferMemory(Buffer& Buffer, VkDevice Device, VkPhysicalDeviceMemoryProperties DeviceMemProperties,
+			bool descriptorAccess, bool mapAccess, void* data = nullptr);
 
 		static void DeallocateBufferMemory(VkDevice Device, VkBuffer* buffer, VkDeviceMemory* memory);
 	

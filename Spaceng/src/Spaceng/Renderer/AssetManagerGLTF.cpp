@@ -9,6 +9,13 @@ namespace Spaceng
 		UniformBuffer.size = sizeof(UBOMatrices);
 	}
 
+
+	VkGLTFAsset::~VkGLTFAsset() 
+	{
+
+	}
+
+
 	void VkGLTFAsset::LoadFromFile(std::string filename)
 	{
 

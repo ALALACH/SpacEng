@@ -26,32 +26,44 @@ namespace Spaceng {
 			m_AppWindow->SetEventCallback(SE_BIND_EVENT(Application::OnEvent));
 		SE_LOG_DEBUG("{}: EventCallback Enabled", m_AppWindow->GetTitle())
 			m_AppWindow->SetVsync(true); 
-
-
-
 	}
+
+
 	Application::~Application()
 	{
 		for (Layer* layer : m_LayerStack)
 		{
 			layer->OnDetach();
+			delete layer;
+		}
+
+
+		for (uint32_t i = 0; i < m_Assets.size(); i++)
+		{
+			DestroyAsset(m_Assets[i]);
 		}
 
 		delete m_Renderer;
-
-		for (VkGLTFAsset* Asset : m_Assets)
-		{
-			delete Asset;
-		}
+		m_Renderer = nullptr;
 
 	}
+
 
 	void Application::PrepareAsset(AssetType type,std::string filename)
 	{
-			VkGLTFAsset* Asset = new VkGLTFAsset(type);
-			m_Renderer->PrepareAsset(Asset ,type ,filename);
-			m_Assets.push_back(Asset);
+		VkGLTFAsset* Asset = new VkGLTFAsset(type);
+		m_Renderer->PrepareAsset(Asset ,type ,filename);
+		m_Assets.push_back(Asset);
 	}
+
+	void Application::DestroyAsset(VkGLTFAsset* Asset)
+	{
+		m_Renderer->CleanUpAsset(Asset);
+
+		delete Asset;
+		Asset = nullptr;
+	}
+
 	void Application::Run()
 	{
 		while (m_Running)
@@ -127,6 +139,7 @@ namespace Spaceng {
 	{
 		m_LayerStack.PopLayer(layer);
 		layer->OnDetach();
+		delete layer;
 	}
 	void Application::PushOverlay(Layer* layer)
 	{

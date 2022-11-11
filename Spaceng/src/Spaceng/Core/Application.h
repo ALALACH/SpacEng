@@ -28,6 +28,7 @@ namespace Spaceng {
 
 
 		void PrepareAsset(AssetType Type,std::string filename);
+		void DestroyAsset(VkGLTFAsset* Asset);
 
 		void Run();
 		void OnEvent(Event& Event);
@@ -48,10 +49,12 @@ namespace Spaceng {
 		virtual void OnShutdown() {}
 
 	private:
-		static Application* s_Instance;
 		LayerStack m_LayerStack;
+		static Application* s_Instance;
+
 
 		VulkanRenderer* m_Renderer;
+		//the elements of an unordered_set are immutable  todo: separate dynamic and static assets
 		std::vector<VkGLTFAsset*> m_Assets;
 		std::unique_ptr<Window> m_AppWindow;
 

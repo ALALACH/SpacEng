@@ -15,12 +15,12 @@ namespace Spaceng
 	}
 	EditorLayer::~EditorLayer()
 	{
-
+		//free Dynamically all members
 	}
 
 	void EditorLayer::OnAttach()
 	{
-		
+		LoadAsset(MeshType, "");
 	}
 
 	void EditorLayer::OnDetach()

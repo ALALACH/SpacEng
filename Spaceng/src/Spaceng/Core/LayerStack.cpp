@@ -11,8 +11,6 @@ namespace Spaceng {
 
 	LayerStack::~LayerStack()
 	{
-		for (Layer* Layer : m_Layers)
-			delete Layer;
 	}
 
 	void LayerStack::PushLayer(Layer* Layer)

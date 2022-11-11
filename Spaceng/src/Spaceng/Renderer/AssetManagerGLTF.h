@@ -1,6 +1,7 @@
 #pragma once
 #include "VulkanCore.h"
-#include "VulkanRenderer.h"
+#include "VulkanMemory.h"
+
 #include "glm/glm/glm.hpp"
 
 

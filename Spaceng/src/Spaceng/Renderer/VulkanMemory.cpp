@@ -8,7 +8,7 @@ namespace Spaceng
 {
 
 	VkResult VulkanBufferMemory::AllocateBufferMemory( Buffer& Buffer, VkDevice Device,
-		VkPhysicalDeviceMemoryProperties DeviceMemoryProperties,void* data, bool descriptorAccess ,bool mapAccess)
+		VkPhysicalDeviceMemoryProperties DeviceMemoryProperties, bool descriptorAccess, bool mapAccess , void* data)
 	{
 		VkBufferCreateInfo BufferCreateCI{};
 		BufferCreateCI.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
