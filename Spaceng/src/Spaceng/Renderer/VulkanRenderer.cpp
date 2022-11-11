@@ -736,20 +736,31 @@ namespace Spaceng
 	}
 
 
-	void VulkanRenderer::prepareUniformBuffer(VkBufferUsageFlags usageflags,VkMemoryPropertyFlags memoryPorpertyflags
-	,VkDeviceSize size,VkBuffer* buffer, VkDeviceMemory* memory, VkDescriptorBufferInfo BufferDescriptor, void* mapped,bool mapAccess, bool DescriptorAcess)
+	void VulkanRenderer::prepareUniformBuffer(VkGLTFAsset& Asset,bool mapAccess, bool descriptorAcess)
 	{
-		VulkanBufferMemory::AllocateBufferMemory(usageflags, memoryPorpertyflags, size, buffer, memory, BufferDescriptor,mapped,
-			Device, deviceMemoryProperties, nullptr, DescriptorAcess, mapAccess);
+		VulkanBufferMemory::AllocateBufferMemory(Asset.UniformBuffer, Device, deviceMemoryProperties, nullptr, descriptorAcess, mapAccess);
+		updateUniformBuffer(Asset);
 	}
 
+
+	void VulkanRenderer::updateUniformBuffer(VkGLTFAsset& Asset)
+	{
+		//update UBO Matrices
+		memcpy(Asset.UniformBuffer.mapped, &Asset.UBOMatrices, sizeof(Asset.UBOMatrices));
+	}
 
 	void VulkanRenderer::cleanUpUniformBuffer(VkDevice Device ,VkBuffer* buffer, VkDeviceMemory* memory)
 	{
 		VulkanBufferMemory::DeallocateBufferMemory(Device, buffer, memory);
 	}
 
-
+	VkGLTFAsset* VulkanRenderer::PrepareAsset(VkGLTFAsset* Asset, AssetType Type , std::string filename)
+	{
+		
+		Asset->LoadFromFile(filename);
+		prepareUniformBuffer(*Asset);
+		return Asset;
+	}
 
 	VkPipelineShaderStageCreateInfo VulkanRenderer::LoadShader(std::string Filename, VkShaderStageFlagBits Stage)
 	{

@@ -4,12 +4,15 @@
 namespace Spaceng
 {
 
-	Vkgltf::Vkgltf()
+	VkGLTFAsset::VkGLTFAsset(AssetType type)
 	{
-		
+		UniformBuffer.size = sizeof(UBOMatrices);
 	}
 
+	void VkGLTFAsset::LoadFromFile(std::string filename)
+	{
 
+	}
 
 
 

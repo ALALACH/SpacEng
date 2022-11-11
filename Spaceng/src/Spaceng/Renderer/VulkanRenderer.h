@@ -3,7 +3,7 @@
 #include "VulkanCore.h"
 #include <glfw/include/GLFW/glfw3.h>
 #include "VulkanMemory.h"
-
+#include "AssetManagerGLTF.h"
 namespace Spaceng
 {
 #ifdef SE_DEBUG
@@ -31,12 +31,13 @@ namespace Spaceng
 
 		void InitSurface(GLFWwindow* Window);
 		void CreateSwapChain(uint32_t* width, uint32_t* height, bool vsync);
-		void prepareUniformBuffer(VkBufferUsageFlags usageflags, VkMemoryPropertyFlags memoryPorpertyflags, VkDeviceSize size, VkBuffer* buffer,
-			VkDeviceMemory* memory, VkDescriptorBufferInfo BufferDescriptor, void* mapped, bool mapAccess, bool DescriptorAcess);
+		void prepareUniformBuffer(VkGLTFAsset& Asset, bool mapAccess = true, bool descriptorAcess = true);
+		void updateUniformBuffer(VkGLTFAsset& Asset);
 		void cleanUpUniformBuffer(VkDevice Device, VkBuffer* buffer, VkDeviceMemory* memory);
 
 		VkPipelineShaderStageCreateInfo LoadShader(std::string Filename, VkShaderStageFlagBits Stage);
 		void Refresh(uint32_t* width, uint32_t* height, bool vsync);
+		void PrepareAsset(VkGLTFAsset* Asset ,AssetType Type , std::string filename);
 		void render();
 
 
@@ -51,7 +52,7 @@ namespace Spaceng
 		bool IsInstanceExtensionSupported(const std::string& InstanceextensionName) const;
 
 	public:
-		friend class Vkgltf;
+		friend class VkGLTFAsset;
 	protected:
 		//Instance
 		 VkInstance Instance;

@@ -26,6 +26,9 @@ namespace Spaceng {
 		Application(const ApplicationSettings& Settings = { "SpacEng",1280,720,400,200 });
 		virtual ~Application();
 
+
+		void PrepareAsset(AssetType Type,std::string filename);
+
 		void Run();
 		void OnEvent(Event& Event);
 
@@ -37,7 +40,7 @@ namespace Spaceng {
 		bool OnWindowResize(WindowResizeEvent& e);
 		bool OnKeyPressed(KeyPressedEvent& e);
 
-		static inline Application& Get() { return *s_Instance; }
+		static inline Application& Get() { return *s_Instance;}
 		inline Window& GetWindow() { return *m_AppWindow; }
 
 		// Implemented in Client
@@ -49,6 +52,7 @@ namespace Spaceng {
 		LayerStack m_LayerStack;
 
 		VulkanRenderer* m_Renderer;
+		std::vector<VkGLTFAsset*> m_Assets;
 		std::unique_ptr<Window> m_AppWindow;
 
 		ImGuiLayer* m_ImGuiLayer;

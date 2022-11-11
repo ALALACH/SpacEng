@@ -1,5 +1,6 @@
 #pragma once
 #include "Spaceng.h"
+#include "glm/glm/glm.hpp"
 
 
 namespace Spaceng
@@ -16,28 +17,8 @@ namespace Spaceng
 		virtual void OnUpdate(float Timestep) override;
 		virtual void OnEvent(Event& Event) override;
 		bool OnKeyPressed(KeyPressedEvent& e);
-	private :
+		void LoadAsset(AssetType type, std::string filename);
+	private:
 		std::string m_DebugName;
-
-
-		//first object
-		struct
-		{
-			VkBufferUsageFlags usageflags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-			VkBuffer buffer = VK_NULL_HANDLE;
-			VkDeviceMemory memory = VK_NULL_HANDLE;
-			void* mapped = nullptr;
-			VkDescriptorBufferInfo BufferDescriptor;
-			struct UBOMatrices {
-				glm::mat4 projection;
-				glm::mat4 model;
-				glm::mat4 view;
-				glm::vec3 camPos;
-			} uboMatrices;
-
-		}Skybox;
 	};
-
-
-
 }

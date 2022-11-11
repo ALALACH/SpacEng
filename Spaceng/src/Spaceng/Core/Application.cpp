@@ -36,10 +36,22 @@ namespace Spaceng {
 		{
 			layer->OnDetach();
 		}
+
 		delete m_Renderer;
+
+		for (VkGLTFAsset* Asset : m_Assets)
+		{
+			delete Asset;
+		}
+
 	}
 
-
+	void Application::PrepareAsset(AssetType type,std::string filename)
+	{
+			VkGLTFAsset* Asset = new VkGLTFAsset(type);
+			m_Renderer->PrepareAsset(Asset ,type ,filename);
+			m_Assets.push_back(Asset);
+	}
 	void Application::Run()
 	{
 		while (m_Running)

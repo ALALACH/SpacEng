@@ -49,4 +49,10 @@ namespace Spaceng
 		}
 		return false;
 	}
+
+
+	void EditorLayer::LoadAsset(AssetType type,std::string filename)
+	{
+		Application::Get().PrepareAsset(type , filename);
+	}
 }
