@@ -20,7 +20,7 @@ namespace Spaceng
 
 	void EditorLayer::OnAttach()
 	{
-		LoadAsset(MeshType, "");
+		LoadAsset("Object1",MeshType, "");
 	}
 
 	void EditorLayer::OnDetach()
@@ -51,8 +51,8 @@ namespace Spaceng
 	}
 
 
-	void EditorLayer::LoadAsset(AssetType type,std::string filename)
+	void EditorLayer::LoadAsset(std::string name,AssetType type,std::string filename)
 	{
-		Application::Get().PrepareAsset(type , filename);
+		Application::Get().PrepareAsset(name,type , filename);
 	}
 }
