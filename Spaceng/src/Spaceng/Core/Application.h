@@ -27,7 +27,7 @@ namespace Spaceng {
 		virtual ~Application();
 
 
-		void PrepareAsset(AssetType Type,std::string filename);
+		void PrepareAsset(std::string name ,AssetType Type,std::string filename);
 		void DestroyAsset(VkGLTFAsset* Asset);
 
 		void Run();

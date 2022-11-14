@@ -4,9 +4,10 @@
 namespace Spaceng
 {
 
-	VkGLTFAsset::VkGLTFAsset(AssetType type)
+	VkGLTFAsset::VkGLTFAsset(std::string name ,AssetType type)
 	{
 		UniformBuffer.size = sizeof(UBOMatrices);
+		Name = name;
 	}
 
 

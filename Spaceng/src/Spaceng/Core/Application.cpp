@@ -49,16 +49,18 @@ namespace Spaceng {
 	}
 
 
-	void Application::PrepareAsset(AssetType type,std::string filename)
+	void Application::PrepareAsset(std::string name ,AssetType type,std::string filename)
 	{
-		VkGLTFAsset* Asset = new VkGLTFAsset(type);
+		VkGLTFAsset* Asset = new VkGLTFAsset(name,type);
 		m_Renderer->PrepareAsset(Asset ,type ,filename);
+		SE_LOG_DEBUG("Asset - {0} - Loaded", name);
 		m_Assets.push_back(Asset);
 	}
 
 	void Application::DestroyAsset(VkGLTFAsset* Asset)
 	{
 		m_Renderer->CleanUpAsset(Asset);
+		SE_LOG_DEBUG("Asset - {0} - removed", Asset->getName());
 
 		delete Asset;
 		Asset = nullptr;

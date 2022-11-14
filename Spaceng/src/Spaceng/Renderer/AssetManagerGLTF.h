@@ -18,12 +18,14 @@ namespace Spaceng
 	{
 		friend class VulkanRenderer;
 	public:
-		VkGLTFAsset(AssetType type);
+		VkGLTFAsset(std::string name ,AssetType type);
 		~VkGLTFAsset();
 
 		void LoadFromFile(std::string filename);
+		inline std::string getName() { return Name; };
 
 	private:
+		std::string Name;
 		Buffer UniformBuffer;
 		struct UBMatrix {
 			glm::mat4 projection;
