@@ -53,7 +53,7 @@ namespace Spaceng {
 	{
 		VkGLTFAsset* Asset = new VkGLTFAsset(name,type);
 		m_Renderer->PrepareAsset(Asset ,type ,filename);
-		SE_LOG_DEBUG("Asset - {0} - Loaded", name);
+		SE_LOG_DEBUG("Asset - {0}- Loaded", name);
 		m_Assets.push_back(Asset);
 	}
 

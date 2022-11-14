@@ -32,20 +32,26 @@ namespace Spaceng
 
 		void InitSurface(GLFWwindow* Window);
 		void CreateSwapChain(uint32_t* width, uint32_t* height, bool vsync);
+
 		void prepareUniformBuffer(VkGLTFAsset* Asset, bool mapAccess = true, bool descriptorAcess = true);
 		void updateUniformBuffer(VkGLTFAsset* Asset);
-		void cleanUpBuffer(VkDevice Device, VkBuffer* buffer, VkDeviceMemory* memory);
+		void prepareDescriptorSet(VkGLTFAsset* Asset);
+
+
 
 		VkPipelineShaderStageCreateInfo LoadShader(std::string Filename, VkShaderStageFlagBits Stage);
-		void Refresh(uint32_t* width, uint32_t* height, bool vsync);
 		void PrepareAsset(VkGLTFAsset* Asset ,AssetType Type , std::string filename);
 		void CleanUpAsset(VkGLTFAsset* Asset);
+
+
+		void Refresh(uint32_t* width, uint32_t* height, bool vsync);
 		void render();
 
 
 
 
 		//helpers
+		void cleanUpBuffer(VkDevice Device, VkBuffer* buffer, VkDeviceMemory* memory);
 		uint32_t getQueueFamilyIndex(VkQueueFlags queueFlags) const;
 		inline VkDevice GetDevice() { return Device; }
 		void PushExtensionsandFeatures(std::vector<const char*> EnabledInstanceextensions, std::vector<const char*> EnabledDeviceextensions,

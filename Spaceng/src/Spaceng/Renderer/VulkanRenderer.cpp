@@ -742,6 +742,94 @@ namespace Spaceng
 		updateUniformBuffer(Asset);
 	}
 
+	void VulkanRenderer::prepareDescriptorSet(VkGLTFAsset* Asset)
+	{
+		uint32_t type = Asset->getType();
+		if (type == MeshType)
+		{
+			//descriptorSet Layout
+			std::vector<VkDescriptorSetLayoutBinding> LayoutBindings = {};
+			
+			VkDescriptorSetLayoutBinding Binding1{};
+			Binding1.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			Binding1.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+			Binding1.binding = 0;
+			Binding1.descriptorCount = 1;
+
+			VkDescriptorSetLayoutBinding Binding2{};
+			Binding2.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			Binding2.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+			Binding2.binding = 1;
+			Binding2.descriptorCount = 1;
+
+			LayoutBindings.push_back(Binding1);
+			LayoutBindings.push_back(Binding2);
+
+			VkDescriptorSetLayoutCreateInfo descriptorLayoutCI = {};
+			descriptorLayoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+			descriptorLayoutCI.pBindings = LayoutBindings.data();
+			descriptorLayoutCI.bindingCount = 2;
+			VK_CHECK_RESULT(vkCreateDescriptorSetLayout(Device, &descriptorLayoutCI, nullptr, &Asset->DescriptorSetLayout));
+
+			//descriptor Pool
+			std::vector<VkDescriptorPoolSize> DescriptorPoolSizes = {};
+
+			VkDescriptorPoolSize Pool1 = {};
+			Pool1.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			Pool1.descriptorCount = 1;
+
+			VkDescriptorPoolSize Pool2 = {};
+			Pool2.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			Pool2.descriptorCount = 1;
+
+			DescriptorPoolSizes.push_back(Pool1);
+			DescriptorPoolSizes.push_back(Pool2);
+
+			VkDescriptorPoolCreateInfo DescriptorpoolCI = {};
+			DescriptorpoolCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+			DescriptorpoolCI.poolSizeCount = 2;
+			DescriptorpoolCI.maxSets = 1;
+			DescriptorpoolCI.pPoolSizes = DescriptorPoolSizes.data();
+
+			VK_CHECK_RESULT(vkCreateDescriptorPool(Device, &DescriptorpoolCI, nullptr, &Asset->DescriptorPool));
+
+			//DescriptorSet (Alloc / Update)
+			VkDescriptorSetAllocateInfo DescriptorAllocateInfo = {};
+			DescriptorAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+			DescriptorAllocateInfo.descriptorPool = Asset->DescriptorPool;
+			DescriptorAllocateInfo.pSetLayouts = &Asset->DescriptorSetLayout;
+			DescriptorAllocateInfo.descriptorSetCount = 1;
+
+			VK_CHECK_RESULT(vkAllocateDescriptorSets(Device, &DescriptorAllocateInfo, &Asset->DescriptorSet));
+
+
+			std::vector<VkWriteDescriptorSet> writeDescriptorSets;
+
+			VkWriteDescriptorSet writeDescriptorSet1{};
+			writeDescriptorSet1.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			writeDescriptorSet1.dstSet = Asset->DescriptorSet;
+			writeDescriptorSet1.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			writeDescriptorSet1.dstBinding = 0;
+			writeDescriptorSet1.pBufferInfo = &Asset->UniformBuffer.BufferDescriptor;
+			writeDescriptorSet1.descriptorCount = 1;
+
+			VkWriteDescriptorSet writeDescriptorSet2{};
+			writeDescriptorSet2.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			writeDescriptorSet2.dstSet = Asset->DescriptorSet;
+			writeDescriptorSet2.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			writeDescriptorSet2.dstBinding = 1;
+			writeDescriptorSet2.pImageInfo = &Asset->TextureDescriptor; //update once implemented
+			writeDescriptorSet2.descriptorCount = 1;
+
+			writeDescriptorSets.push_back(writeDescriptorSet1);
+			writeDescriptorSets.push_back(writeDescriptorSet2);
+
+			vkUpdateDescriptorSets(Device, writeDescriptorSets.size(), writeDescriptorSets.data(), 0, NULL);
+		}
+
+
+	}
+
 
 	void VulkanRenderer::updateUniformBuffer(VkGLTFAsset* Asset)
 	{
@@ -758,11 +846,15 @@ namespace Spaceng
 	{
 		Asset->LoadFromFile(filename);
 		prepareUniformBuffer(Asset);
+		prepareDescriptorSet(Asset);
 	}
 
 	void VulkanRenderer::CleanUpAsset(VkGLTFAsset* Asset)
 	{
 		cleanUpBuffer(Device, &Asset->UniformBuffer.buffer, &Asset->UniformBuffer.memory); //Uniform Bufffer
+		vkDestroyDescriptorPool(Device, Asset->DescriptorPool, nullptr);
+
+
 		//destroy Draw Buffers
 		//destroy Descriptors / Pipeline Dependencies...
 		//destroy commandBuffers
