@@ -37,10 +37,10 @@ namespace Spaceng {
 			delete layer;
 		}
 
-
-		for (uint32_t i = 0; i < m_Assets.size(); i++)
+		size_t Size = m_Assets.size();
+		for (uint32_t i = 0; i < Size; i++)
 		{
-			DestroyAsset(m_Assets[i]);
+			DestroyAsset(m_Assets[0]);
 		}
 
 		delete m_Renderer;
@@ -53,8 +53,8 @@ namespace Spaceng {
 	{
 		VkGLTFAsset* Asset = new VkGLTFAsset(name , type , DepthStencil, filepath);
 		m_Renderer->PrepareAsset(Asset ,type , filepath);
-		SE_LOG_DEBUG("Asset - {0}- Loaded", name);
 		m_Assets.push_back(Asset);
+		SE_LOG_DEBUG("Asset - {0}- Loaded", Asset->getName());
 
 	}
 
