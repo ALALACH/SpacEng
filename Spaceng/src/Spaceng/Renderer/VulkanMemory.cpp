@@ -27,7 +27,8 @@ namespace Spaceng
 		memAlloc.memoryTypeIndex = getMemoryType(DeviceMemoryProperties, Buffer.MemoryPropertyflags, memReq, memTypeFound);
 
 		VkMemoryAllocateFlagsInfoKHR allocFlagsInfo{};
-		if (Buffer.usageflags & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT) {
+		if (Buffer.usageflags & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT) 
+		{
 			allocFlagsInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO_KHR;
 			allocFlagsInfo.flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT_KHR;
 			memAlloc.pNext = &allocFlagsInfo;
@@ -35,11 +36,13 @@ namespace Spaceng
 
 		VK_CHECK_RESULT(vkAllocateMemory(Device, &memAlloc, nullptr, &Buffer.memory));
 
-		if (data != nullptr)
+		if (data != nullptr) //MeshBuffer Mapping
 		{
+			//Host Access to Device Memory Objects
 			VK_CHECK_RESULT(vkMapMemory(Device, Buffer.memory, 0, Buffer.size, 0, &Buffer.mapped));
 			memcpy(&Buffer.mapped, data, Buffer.size);
-			// If host coherency hasn't been requested, do a manual flush to make writes visible
+
+			//guarantee that writes to the memory object from the host are made available to the host domain
 			if ((Buffer.MemoryPropertyflags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) == 0)
 			{
 				VkMappedMemoryRange mappedRange{};
@@ -51,7 +54,7 @@ namespace Spaceng
 			}
 			vkUnmapMemory(Device, Buffer.memory);
 		}
-		if (!data && mapAccess) //UniformBuffers Specefic
+		if (!data && mapAccess) //UniformBuffers Updates Specefic 
 		{
 			VK_CHECK_RESULT(vkMapMemory(Device, Buffer.memory, 0, Buffer.size, 0, &Buffer.mapped));
 		}

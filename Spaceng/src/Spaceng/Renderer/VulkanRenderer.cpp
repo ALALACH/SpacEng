@@ -370,7 +370,7 @@ namespace Spaceng
 	}
 
 
-	void VulkanRenderer::InitSurface(GLFWwindow* Window)
+	void VulkanRenderer::CreateSurface(GLFWwindow* Window)
 	{
 		//------------------------------------------------------------------------------------------------------------
 		//Init Surface
@@ -433,17 +433,6 @@ namespace Spaceng
 		SE_ASSERT(presentQueueNodeIndex != UINT32_MAX,"")
 		
 		queueNodeIndex = graphicsQueueNodeIndex;
-	}
-
-
-	void VulkanRenderer::CreateSwapChain(uint32_t *width, uint32_t *height, bool vsync)
-	{
-		VkSwapchainKHR OldSwapChain = Swapchain;
-
-		//capabilities : Format and Properties
-		VkSurfaceCapabilitiesKHR SurfCaps;
-		VK_CHECK_RESULT(fpGetPhysicalDeviceSurfaceCapabilitiesKHR(PhysicalDevice, Surface, &SurfCaps));
-
 
 		// Surface Formats & Space
 		uint32_t formatCount;
@@ -478,6 +467,61 @@ namespace Spaceng
 				colorSpace = surfaceFormats[0].colorSpace;
 			}
 		}
+
+		//RenderPass : required by Pipeline, Requires Format , can't be refreshed
+		VkAttachmentDescription colorAttachmentDescription{};
+		colorAttachmentDescription.format = colorFormat;
+		colorAttachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
+		colorAttachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		colorAttachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		colorAttachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		colorAttachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		colorAttachmentDescription.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		colorAttachmentDescription.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+		VkAttachmentReference colorReference = {};
+		colorReference.attachment = 0;
+		colorReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+		VkSubpassDescription subpassDescription = {};
+		subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+		subpassDescription.colorAttachmentCount = 1;
+		subpassDescription.pColorAttachments = &colorReference;
+		subpassDescription.inputAttachmentCount = 0;
+		subpassDescription.pInputAttachments = nullptr;
+		subpassDescription.preserveAttachmentCount = 0;
+		subpassDescription.pPreserveAttachments = nullptr;
+		subpassDescription.pResolveAttachments = nullptr;
+
+		VkSubpassDependency dependency = {};
+		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+		dependency.dstSubpass = 0;
+		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		dependency.srcAccessMask = 0;
+		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+		VkRenderPassCreateInfo renderPassInfo = {};
+		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+		renderPassInfo.attachmentCount = 1;
+		renderPassInfo.pAttachments = &colorAttachmentDescription;
+		renderPassInfo.subpassCount = 1;
+		renderPassInfo.pSubpasses = &subpassDescription;
+		renderPassInfo.dependencyCount = 1;
+		renderPassInfo.pDependencies = &dependency;
+
+		VK_CHECK_RESULT(vkCreateRenderPass(Device, &renderPassInfo, nullptr, &Renderpass));
+	}
+
+
+	void VulkanRenderer::CreateSwapChain(uint32_t *width, uint32_t *height, bool vsync)
+	{
+		VkSwapchainKHR OldSwapChain = Swapchain;
+
+		//capabilities : Format and Properties
+		VkSurfaceCapabilitiesKHR SurfCaps;
+		VK_CHECK_RESULT(fpGetPhysicalDeviceSurfaceCapabilitiesKHR(PhysicalDevice, Surface, &SurfCaps));
+
 		//Extent
 		VkExtent2D SwapchainExtent = {};
 		if (SurfCaps.currentExtent.width == (uint32_t)-1)
@@ -654,57 +698,11 @@ namespace Spaceng
 			VK_CHECK_RESULT(vkAllocateCommandBuffers(Device, &CommandbufferAllocateInfo, &commandBuffer));
 		}
 
-		//render pass
-		vkDestroyRenderPass(Device, Renderpass, nullptr);
-
-		VkAttachmentDescription colorAttachmentDescription{};
-		colorAttachmentDescription.format = colorFormat;
-		colorAttachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
-		colorAttachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		colorAttachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		colorAttachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		colorAttachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		colorAttachmentDescription.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		colorAttachmentDescription.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-
-		VkAttachmentReference colorReference = {};
-		colorReference.attachment = 0;
-		colorReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-		VkSubpassDescription subpassDescription = {};
-		subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-		subpassDescription.colorAttachmentCount = 1;
-		subpassDescription.pColorAttachments = &colorReference;
-		subpassDescription.inputAttachmentCount = 0;
-		subpassDescription.pInputAttachments = nullptr;
-		subpassDescription.preserveAttachmentCount = 0;
-		subpassDescription.pPreserveAttachments = nullptr;
-		subpassDescription.pResolveAttachments = nullptr;
-
-		VkSubpassDependency dependency = {};
-		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-		dependency.dstSubpass = 0;
-		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependency.srcAccessMask = 0;
-		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-
-		VkRenderPassCreateInfo renderPassInfo = {};
-		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-		renderPassInfo.attachmentCount = 1;
-		renderPassInfo.pAttachments = &colorAttachmentDescription;
-		renderPassInfo.subpassCount = 1;
-		renderPassInfo.pSubpasses = &subpassDescription;
-		renderPassInfo.dependencyCount = 1;
-		renderPassInfo.pDependencies = &dependency;
-
-		VK_CHECK_RESULT(vkCreateRenderPass(Device, &renderPassInfo, nullptr, &Renderpass));
-
 		//Framebuffer
 		for (VkFramebuffer& framebuffer : FrameBuffer)
 			vkDestroyFramebuffer(Device, framebuffer, nullptr);
 
-		VkFramebufferCreateInfo FramebufferCI{};
+		VkFramebufferCreateInfo FramebufferCI {};
 		FramebufferCI.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 		FramebufferCI.renderPass = Renderpass;
 		FramebufferCI.attachmentCount = 1;
@@ -742,13 +740,21 @@ namespace Spaceng
 		updateUniformBuffer(Asset);
 	}
 
+
+	void VulkanRenderer::updateUniformBuffer(VkGLTFAsset* Asset)
+	{
+		//writes to memory block not needed so no VK_MEMORY_PROPERTY_HOST_COHERENT_BIT 
+		memcpy(Asset->UniformBuffer.mapped, &Asset->UBOMatrices, sizeof(Asset->UBOMatrices));
+	}
+
+
 	void VulkanRenderer::prepareDescriptorSet(VkGLTFAsset* Asset)
 	{
 		uint32_t type = Asset->getType();
 		if (type == MeshType)
 		{
 			//descriptorSet Layout
-			std::vector<VkDescriptorSetLayoutBinding> LayoutBindings = {};
+			std::vector<VkDescriptorSetLayoutBinding> LayoutBindings {};
 			
 			VkDescriptorSetLayoutBinding Binding1{};
 			Binding1.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -774,18 +780,18 @@ namespace Spaceng
 			//descriptor Pool
 			std::vector<VkDescriptorPoolSize> DescriptorPoolSizes = {};
 
-			VkDescriptorPoolSize Pool1 = {};
-			Pool1.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			Pool1.descriptorCount = 1;
+			VkDescriptorPoolSize PoolSize1 {};
+			PoolSize1.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			PoolSize1.descriptorCount = 1;
 
-			VkDescriptorPoolSize Pool2 = {};
-			Pool2.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			Pool2.descriptorCount = 1;
+			VkDescriptorPoolSize PoolSize2 {};
+			PoolSize2.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			PoolSize2.descriptorCount = 1;
 
-			DescriptorPoolSizes.push_back(Pool1);
-			DescriptorPoolSizes.push_back(Pool2);
+			DescriptorPoolSizes.push_back(PoolSize1);
+			DescriptorPoolSizes.push_back(PoolSize2);
 
-			VkDescriptorPoolCreateInfo DescriptorpoolCI = {};
+			VkDescriptorPoolCreateInfo DescriptorpoolCI {};
 			DescriptorpoolCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 			DescriptorpoolCI.poolSizeCount = 2;
 			DescriptorpoolCI.maxSets = 1;
@@ -794,7 +800,7 @@ namespace Spaceng
 			VK_CHECK_RESULT(vkCreateDescriptorPool(Device, &DescriptorpoolCI, nullptr, &Asset->DescriptorPool));
 
 			//DescriptorSet (Alloc / Update)
-			VkDescriptorSetAllocateInfo DescriptorAllocateInfo = {};
+			VkDescriptorSetAllocateInfo DescriptorAllocateInfo {};
 			DescriptorAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 			DescriptorAllocateInfo.descriptorPool = Asset->DescriptorPool;
 			DescriptorAllocateInfo.pSetLayouts = &Asset->DescriptorSetLayout;
@@ -818,52 +824,147 @@ namespace Spaceng
 			writeDescriptorSet2.dstSet = Asset->DescriptorSet;
 			writeDescriptorSet2.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 			writeDescriptorSet2.dstBinding = 1;
-			writeDescriptorSet2.pImageInfo = &Asset->TextureDescriptor; //update once implemented
+			writeDescriptorSet2.pImageInfo = &Asset->TextureDescriptor; //update once implemented and allocate memory for the texture object
 			writeDescriptorSet2.descriptorCount = 1;
 
 			writeDescriptorSets.push_back(writeDescriptorSet1);
 			writeDescriptorSets.push_back(writeDescriptorSet2);
 
-			vkUpdateDescriptorSets(Device, writeDescriptorSets.size(), writeDescriptorSets.data(), 0, NULL);
+			//vkUpdateDescriptorSets(Device, writeDescriptorSets.size(), writeDescriptorSets.data(), 0, NULL);
 		}
-
-
 	}
 
-
-	void VulkanRenderer::updateUniformBuffer(VkGLTFAsset* Asset)
+	void VulkanRenderer::preparePipeline(VkGLTFAsset* Asset)
 	{
-		//update UBO Matrices
-		memcpy(Asset->UniformBuffer.mapped, &Asset->UBOMatrices, sizeof(Asset->UBOMatrices));
+		//PipelineLayout
+		VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
+		pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+		pipelineLayoutCreateInfo.setLayoutCount = 1;
+		pipelineLayoutCreateInfo.pSetLayouts = &Asset->DescriptorSetLayout;
+		VK_CHECK_RESULT(vkCreatePipelineLayout(Device, &pipelineLayoutCreateInfo, nullptr, &Asset->PipelineLayout));
+
+		//InputAssemblyState
+		VkPipelineInputAssemblyStateCreateInfo InputAssemblyStateCI {};
+		InputAssemblyStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+		InputAssemblyStateCI.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+		InputAssemblyStateCI.flags = 0;
+		InputAssemblyStateCI.primitiveRestartEnable = VK_FALSE; // controls whether a special vertex index value is treated as restarting the assembly of primitives
+
+		//RasterizationState
+		VkPipelineRasterizationStateCreateInfo RasterizationStateCI {};
+		RasterizationStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+		RasterizationStateCI.polygonMode = VK_POLYGON_MODE_FILL;
+		RasterizationStateCI.cullMode = VK_CULL_MODE_NONE; //can be experimented with
+		RasterizationStateCI.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+		RasterizationStateCI.flags = 0;
+		RasterizationStateCI.depthClampEnable = VK_FALSE;
+		RasterizationStateCI.lineWidth = 1.0f;
+
+		//MultisampleState
+		VkPipelineMultisampleStateCreateInfo MultiSampleCI {};
+		MultiSampleCI.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+		MultiSampleCI.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT; //read 1_bit image data and apply filtering and other transformations for the shader.
+		MultiSampleCI.flags = 0;
+
+		//ColorBlendState
+		VkPipelineColorBlendAttachmentState pipelineColorBlendAttachmentState {};
+		pipelineColorBlendAttachmentState.colorWriteMask = 0xf;
+		pipelineColorBlendAttachmentState.blendEnable = VK_FALSE;
+		VkPipelineColorBlendStateCreateInfo ColorBlendStateCI {};
+		ColorBlendStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+		ColorBlendStateCI.pAttachments = &pipelineColorBlendAttachmentState;
+		ColorBlendStateCI.attachmentCount = 1;
+
+		//DepthStencil
+		VkPipelineDepthStencilStateCreateInfo DepthStencilCI {};
+		DepthStencilCI.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+		DepthStencilCI.depthTestEnable = VK_TRUE;
+		DepthStencilCI.depthWriteEnable = VK_TRUE;
+		DepthStencilCI.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+		DepthStencilCI.back.compareOp = VK_COMPARE_OP_ALWAYS;
+		
+		//ViewportState
+		VkPipelineViewportStateCreateInfo pipelineViewportStateCI{};
+		pipelineViewportStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+		pipelineViewportStateCI.viewportCount = 1;
+		pipelineViewportStateCI.scissorCount = 1;
+		pipelineViewportStateCI.flags = 0;
+
+		//DynamicState
+		VkPipelineDynamicStateCreateInfo DynamicStateCI {};
+		std::vector<VkDynamicState> EnabledDynamicState = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
+		DynamicStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+		DynamicStateCI.pDynamicStates = EnabledDynamicState.data();
+		DynamicStateCI.dynamicStateCount = static_cast<uint32_t>(EnabledDynamicState.size());
+		DynamicStateCI.flags = 0;
+
+		//ShaderStages
+		std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages{};
+		shaderStages[0] = LoadShader(Asset->VertexShaderFile, VK_SHADER_STAGE_VERTEX_BIT);
+		shaderStages[1] = LoadShader(Asset->FragmentShaderFile, VK_SHADER_STAGE_FRAGMENT_BIT);
+
+		//VertexInputState                        
+		VkPipelineVertexInputStateCreateInfo VertexInputState {};
+		VertexInputState.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+		// to do : (empty) to be implemented for further use
+
+
+
+		//PipelineCreateInfo
+		VkGraphicsPipelineCreateInfo PipelineCI {};
+		PipelineCI.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+		PipelineCI.layout = Asset->PipelineLayout;
+		PipelineCI.renderPass = Renderpass;
+		PipelineCI.flags = 0;
+		PipelineCI.basePipelineIndex = -1;
+		PipelineCI.basePipelineHandle = VK_NULL_HANDLE;
+		PipelineCI.pInputAssemblyState = &InputAssemblyStateCI;
+		PipelineCI.pRasterizationState = &RasterizationStateCI;
+		PipelineCI.pMultisampleState = &MultiSampleCI;
+		PipelineCI.pColorBlendState = &ColorBlendStateCI;
+		if (Asset->DepthStencilEnabled){ 
+		PipelineCI.pDepthStencilState = &DepthStencilCI;}
+		PipelineCI.pViewportState = &pipelineViewportStateCI;
+		PipelineCI.pDynamicState = &DynamicStateCI;
+		PipelineCI.stageCount = static_cast<uint32_t>(shaderStages.size());
+		PipelineCI.pStages = shaderStages.data();
+		PipelineCI.pVertexInputState = &VertexInputState;
+
+		VK_CHECK_RESULT(vkCreateGraphicsPipelines(Device, PipelineCache, 1, &PipelineCI, nullptr, &Asset->Pipeline));
 	}
+
+
 
 	void VulkanRenderer::cleanUpBuffer(VkDevice Device ,VkBuffer* buffer, VkDeviceMemory* memory)
 	{
 		VulkanBufferMemory::DeallocateBufferMemory(Device, buffer, memory);
 	}
 
-	void VulkanRenderer::PrepareAsset(VkGLTFAsset* Asset, AssetType Type , std::string filename)
+	void VulkanRenderer::PrepareAsset(VkGLTFAsset* Asset, AssetType Type , std::string filepath)
 	{
-		Asset->LoadFromFile(filename);
+		Asset->LoadFromFile(filepath);
 		prepareUniformBuffer(Asset);
 		prepareDescriptorSet(Asset);
+		preparePipeline(Asset);
 	}
 
 	void VulkanRenderer::CleanUpAsset(VkGLTFAsset* Asset)
 	{
 		cleanUpBuffer(Device, &Asset->UniformBuffer.buffer, &Asset->UniformBuffer.memory); //Uniform Bufffer
 		vkDestroyDescriptorPool(Device, Asset->DescriptorPool, nullptr);
-
-
+		vkDestroyPipeline(Device, Asset->Pipeline, nullptr);
+		vkDestroyPipelineLayout(Device, Asset->PipelineLayout, nullptr);
+		vkDestroyDescriptorSetLayout(Device, Asset->DescriptorSetLayout, nullptr);
+		
 		//destroy Draw Buffers
-		//destroy Descriptors / Pipeline Dependencies...
 		//destroy commandBuffers
 	}
 
 
 	VkPipelineShaderStageCreateInfo VulkanRenderer::LoadShader(std::string Filename, VkShaderStageFlagBits Stage)
 	{
-		std::ifstream is(Filename.c_str(), std::ios::binary | std::ios::in | std::ios::ate);
+		const char* file = Filename.c_str();
+		std::ifstream is(file, std::ios::binary | std::ios::in | std::ios::ate);
 		SE_ASSERT(is.is_open(), "Could not open Shader File")
 
 		size_t size = is.tellg();
@@ -888,7 +989,7 @@ namespace Spaceng
 		shaderstage.stage = Stage;
 		shaderstage.module = shaderModule;
 		shaderstage.pName = "main";
-		SE_ASSERT(!shaderstage.module, "ShaderStage Module not Loaded");
+		SE_ASSERT(shaderstage.module, "ShaderStage Module not Loaded");
 		ShaderModules.push_back(shaderstage.module);
 		
 		return shaderstage;

@@ -1,0 +1,1 @@
+C:/VulkanSDK/1.3.204.1/Bin/glslc triangle.vert -o triangle.vert.spv

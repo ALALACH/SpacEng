@@ -20,7 +20,9 @@ namespace Spaceng
 
 	void EditorLayer::OnAttach()
 	{
-		LoadAsset("Object1",MeshType, "");
+		std::string Dir= Application::Get().getProjectDirectory();
+		LoadAsset("triangle", MeshType, Dir, true);
+
 	}
 
 	void EditorLayer::OnDetach()
@@ -51,8 +53,8 @@ namespace Spaceng
 	}
 
 
-	void EditorLayer::LoadAsset(std::string name,AssetType type,std::string filename)
+	void EditorLayer::LoadAsset(std::string name,AssetType type,std::string filepath, bool DepthStencil)
 	{
-		Application::Get().PrepareAsset(name,type , filename);
+		Application::Get().PrepareAsset(name , type , filepath , DepthStencil);
 	}
 }

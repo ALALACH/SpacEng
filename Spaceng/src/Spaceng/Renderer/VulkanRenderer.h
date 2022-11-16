@@ -5,6 +5,7 @@
 #include "VulkanMemory.h"
 #include "AssetManagerGLTF.h"
 
+
 namespace Spaceng
 {
 #ifdef SE_DEBUG
@@ -30,16 +31,16 @@ namespace Spaceng
 
 
 
-		void InitSurface(GLFWwindow* Window);
+		void CreateSurface(GLFWwindow* Window);
 		void CreateSwapChain(uint32_t* width, uint32_t* height, bool vsync);
 
 		void prepareUniformBuffer(VkGLTFAsset* Asset, bool mapAccess = true, bool descriptorAcess = true);
 		void updateUniformBuffer(VkGLTFAsset* Asset);
 		void prepareDescriptorSet(VkGLTFAsset* Asset);
+		void preparePipeline(VkGLTFAsset* Asset);
 
 
 
-		VkPipelineShaderStageCreateInfo LoadShader(std::string Filename, VkShaderStageFlagBits Stage);
 		void PrepareAsset(VkGLTFAsset* Asset ,AssetType Type , std::string filename);
 		void CleanUpAsset(VkGLTFAsset* Asset);
 
@@ -52,6 +53,7 @@ namespace Spaceng
 
 		//helpers
 		void cleanUpBuffer(VkDevice Device, VkBuffer* buffer, VkDeviceMemory* memory);
+		VkPipelineShaderStageCreateInfo LoadShader(std::string Filename, VkShaderStageFlagBits Stage);
 		uint32_t getQueueFamilyIndex(VkQueueFlags queueFlags) const;
 		inline VkDevice GetDevice() { return Device; }
 		void PushExtensionsandFeatures(std::vector<const char*> EnabledInstanceextensions, std::vector<const char*> EnabledDeviceextensions,

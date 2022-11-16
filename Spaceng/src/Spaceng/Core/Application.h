@@ -27,7 +27,7 @@ namespace Spaceng {
 		virtual ~Application();
 
 
-		void PrepareAsset(std::string name ,AssetType Type,std::string filename);
+		void PrepareAsset(std::string name ,AssetType Type,std::string filename , bool DepthStencil);
 		void DestroyAsset(VkGLTFAsset* Asset);
 
 		void Run();
@@ -43,7 +43,9 @@ namespace Spaceng {
 
 		static inline Application& Get() { return *s_Instance;}
 		inline Window& GetWindow() { return *m_AppWindow; }
-
+		
+		std::string getProjectDirectory();
+		
 		// Implemented in Client
 		virtual void OnInit() {}
 		virtual void OnShutdown() {}

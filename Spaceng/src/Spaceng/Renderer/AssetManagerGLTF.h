@@ -19,7 +19,7 @@ namespace Spaceng
 	{
 		friend class VulkanRenderer;
 	public:
-		VkGLTFAsset(std::string name ,AssetType type);
+		VkGLTFAsset(std::string name , AssetType type, bool DepthStencil, std::string filepath);
 		~VkGLTFAsset();
 
 		void LoadFromFile(std::string filename);
@@ -36,6 +36,15 @@ namespace Spaceng
 		VkDescriptorSetLayout DescriptorSetLayout = VK_NULL_HANDLE;
 		VkDescriptorPool DescriptorPool = VK_NULL_HANDLE;
 		VkDescriptorSet DescriptorSet = VK_NULL_HANDLE;
+
+		VkPipelineLayout PipelineLayout = VK_NULL_HANDLE;
+		VkPipeline Pipeline = VK_NULL_HANDLE;
+
+		bool DepthStencilEnabled = false;
+
+		std::string VertexShaderFile ;
+		std::string FragmentShaderFile ;
+		std::string AssetFile;
 
 		struct UBMatrix {
 			glm::mat4 projection;

@@ -49,12 +49,13 @@ namespace Spaceng {
 	}
 
 
-	void Application::PrepareAsset(std::string name ,AssetType type,std::string filename)
+	void Application::PrepareAsset(std::string name ,AssetType type,std::string filepath, bool DepthStencil)
 	{
-		VkGLTFAsset* Asset = new VkGLTFAsset(name,type);
-		m_Renderer->PrepareAsset(Asset ,type ,filename);
+		VkGLTFAsset* Asset = new VkGLTFAsset(name , type , DepthStencil, filepath);
+		m_Renderer->PrepareAsset(Asset ,type , filepath);
 		SE_LOG_DEBUG("Asset - {0}- Loaded", name);
 		m_Assets.push_back(Asset);
+
 	}
 
 	void Application::DestroyAsset(VkGLTFAsset* Asset)
@@ -147,5 +148,15 @@ namespace Spaceng {
 	{
 		m_LayerStack.PushOverLay(layer);
 		layer->OnAttach();
+	}
+
+	std::string Application::getProjectDirectory() 
+	{
+		TCHAR NPath[MAX_PATH];
+		GetCurrentDirectory(MAX_PATH, NPath);
+		std::wstring Path(NPath);
+		std::string Dir;
+		std::transform(Path.begin(), Path.end(), std::back_inserter(Dir), [](wchar_t c) {return (char)c; });
+		return Dir;
 	}
 }

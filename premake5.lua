@@ -97,6 +97,7 @@ project "Spaceng"
 	
 	defines 
 	{ 
+		--"SE_DATA_ASSET = %{prj.name}",
 		"SE_PLATFORM_WIN",
 		"_CRT_SECURE_NO_WARNINGS"
 	}
