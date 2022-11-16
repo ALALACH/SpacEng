@@ -1035,6 +1035,7 @@ namespace Spaceng
 		// Use a fence to wait until the command buffer has finished execution before using it again
 		VK_CHECK_RESULT(vkWaitForFences(Device, 1, &QueueFences[ImageIndex], VK_TRUE, UINT64_MAX));
 		VK_CHECK_RESULT(vkResetFences(Device, 1, &QueueFences[ImageIndex]));
+
 		Submitinfo.commandBufferCount = 1;
 		Submitinfo.pCommandBuffers = &CommandBuffers[ImageIndex]; // Command buffers(s) to execute in this batch (submission)
 

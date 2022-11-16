@@ -62,7 +62,7 @@ namespace Spaceng {
 	{
 		m_Renderer->CleanUpAsset(Asset);
 		SE_LOG_DEBUG("Asset - {0} - removed", Asset->getName());
-
+		std::erase(m_Assets, Asset);
 		delete Asset;
 		Asset = nullptr;
 	}
@@ -71,20 +71,20 @@ namespace Spaceng {
 	{
 		while (m_Running)
 		{
+			m_AppWindow->PollEvents(m_Timestep);
+
 			if (!m_Minimized)
 			{ 
 				for (Layer* layer : m_LayerStack)
 					layer->OnUpdate(m_Timestep);
 
-			}
+			//m_Renderer->render();
 			//if camera.ismoving()    ´==> UpdateUniformBuffers();
-			if(m_AppWindow)
-				m_AppWindow->PollEvents(m_Timestep);
-				//m_Renderer->render();
-				
 
-				m_Timestep = (float)glfwGetTime() - m_lastframetime;
-				m_lastframetime = (float)glfwGetTime();	
+
+			}
+			m_Timestep = (float)glfwGetTime() - m_lastframetime;
+			m_lastframetime = (float)glfwGetTime();	
 		}
 	}
 	

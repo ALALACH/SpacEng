@@ -21,6 +21,18 @@ namespace Spaceng
 	void EditorLayer::OnAttach()
 	{
 		std::string Dir= Application::Get().getProjectDirectory();
+
+		LoadAsset("triangle", MeshType, Dir, true);
+		LoadAsset("triangle", MeshType, Dir, true);
+		LoadAsset("triangle", MeshType, Dir, true);
+		LoadAsset("triangle", MeshType, Dir, true);
+		LoadAsset("triangle", MeshType, Dir, true);
+		LoadAsset("triangle", MeshType, Dir, true);
+		LoadAsset("triangle", MeshType, Dir, true);
+		LoadAsset("triangle", MeshType, Dir, true);
+		LoadAsset("triangle", MeshType, Dir, true);
+		LoadAsset("triangle", MeshType, Dir, true);
+		LoadAsset("triangle", MeshType, Dir, true);
 		LoadAsset("triangle", MeshType, Dir, true);
 
 	}
