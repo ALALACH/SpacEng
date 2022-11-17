@@ -26,7 +26,11 @@ namespace Spaceng
 	{
 
 	}
+	 
+	void VkGLTFAsset::Draw()
+	{
 
+	}
 
 
 

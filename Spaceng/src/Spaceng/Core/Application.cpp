@@ -55,7 +55,7 @@ namespace Spaceng {
 		m_Renderer->PrepareAsset(Asset ,type , filepath);
 		m_Assets.push_back(Asset);
 		SE_LOG_DEBUG("Asset - {0}- Loaded", Asset->getName());
-
+		Asset_Nr_Changed = true;
 	}
 
 	void Application::DestroyAsset(VkGLTFAsset* Asset)
@@ -65,7 +65,19 @@ namespace Spaceng {
 		std::erase(m_Assets, Asset);
 		delete Asset;
 		Asset = nullptr;
+		Asset_Nr_Changed = true;
 	}
+
+	void Application::Render()
+	{
+		if (Asset_Nr_Changed)
+		{
+			m_Renderer->RecordCommandBuffers(&m_Assets);
+		}
+		Asset_Nr_Changed = false;
+		m_Renderer->render(&m_Assets);
+	}
+
 
 	void Application::Run()
 	{
@@ -78,9 +90,8 @@ namespace Spaceng {
 				for (Layer* layer : m_LayerStack)
 					layer->OnUpdate(m_Timestep);
 
-			//m_Renderer->render();
 			//if camera.ismoving()    ´==> UpdateUniformBuffers();
-
+				//Render();
 
 			}
 			m_Timestep = (float)glfwGetTime() - m_lastframetime;
@@ -118,8 +129,7 @@ namespace Spaceng {
 		//todo : Resize viewport & ImGui Pannels
 		uint32_t width = e.GetWidth();
 		uint32_t height = e.GetHeight();
-		m_Renderer->Refresh(&width,&height, m_AppWindow->GetVsync());
-
+		m_Renderer->Refresh(&width,&height, m_AppWindow->GetVsync() , &m_Assets);
 		return true;
 	}
 	bool Application::OnKeyPressed(KeyPressedEvent& e)

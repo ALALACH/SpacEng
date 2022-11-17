@@ -45,8 +45,9 @@ namespace Spaceng
 		void CleanUpAsset(VkGLTFAsset* Asset);
 
 
-		void Refresh(uint32_t* width, uint32_t* height, bool vsync);
-		void render();
+		void Refresh(uint32_t* width, uint32_t* height, bool vsync, std::vector<VkGLTFAsset*>* Assets);
+		void RecordCommandBuffers(std::vector<VkGLTFAsset*>* Assets);
+		void render(std::vector<VkGLTFAsset*>* Assets);
 
 
 
@@ -109,7 +110,7 @@ namespace Spaceng
 			 VkImage image;
 			 VkImageView imageview;
 		 }SCBuffer;
-		 std::vector<SCBuffer> SwapChainBuffers;
+		 std::vector<SCBuffer> SwapChainImageViewBufffer;
 		 std::vector<VkImage> RetrievedImages;
 		 uint32_t ImageCount= 0;
 

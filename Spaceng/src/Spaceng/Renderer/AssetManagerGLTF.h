@@ -23,6 +23,7 @@ namespace Spaceng
 		~VkGLTFAsset();
 
 		void LoadFromFile(std::string filename);
+		void Draw();
 		inline const std::string getName() { return Name; };
 		inline const uint32_t getType() { return Type; };
 

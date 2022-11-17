@@ -29,6 +29,7 @@ namespace Spaceng {
 
 		void PrepareAsset(std::string name ,AssetType Type,std::string filename , bool DepthStencil);
 		void DestroyAsset(VkGLTFAsset* Asset);
+		void Render();
 
 		void Run();
 		void OnEvent(Event& Event);
@@ -64,6 +65,7 @@ namespace Spaceng {
 
 		bool m_Running = true;
 		bool m_Minimized = false;
+		bool Asset_Nr_Changed = false;
 		float m_Timestep=0.0f, m_lastframetime=0.0f;
 
 

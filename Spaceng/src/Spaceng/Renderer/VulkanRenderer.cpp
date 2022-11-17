@@ -11,7 +11,7 @@ namespace Spaceng
 		{
 			for (uint32_t i = 0; i < ImageCount; i++)
 			{
-				vkDestroyImageView(Device, SwapChainBuffers[i].imageview, nullptr);
+				vkDestroyImageView(Device, SwapChainImageViewBufffer[i].imageview, nullptr);
 			}
 		}
 		if (Surface != VK_NULL_HANDLE)
@@ -630,7 +630,7 @@ namespace Spaceng
 		{
 			for (uint32_t i = 0; i < ImageCount; i++)
 			{
-				vkDestroyImageView(Device, SwapChainBuffers[i].imageview, nullptr);
+				vkDestroyImageView(Device, SwapChainImageViewBufffer[i].imageview, nullptr);
 			}
 			fpDestroySwapchainKHR(Device, OldSwapChain, nullptr);
 		}
@@ -642,8 +642,8 @@ namespace Spaceng
 		RetrievedImages.resize(ImageCount);
 		VK_CHECK_RESULT(fpGetSwapchainImagesKHR(Device, Swapchain, &ImageCount, RetrievedImages.data()));
 
-		SwapChainBuffers.clear();
-		SwapChainBuffers.resize(ImageCount);
+		SwapChainImageViewBufffer.clear();
+		SwapChainImageViewBufffer.resize(ImageCount);
 
 		for (uint32_t i = 0; i < ImageCount; i++)
 		{
@@ -668,10 +668,10 @@ namespace Spaceng
 			SwapChainImageViewCI.subresourceRange.layerCount = 1;
 
 
-			SwapChainBuffers[i].image = RetrievedImages[i];
-			SwapChainImageViewCI.image = SwapChainBuffers[i].image;
+			SwapChainImageViewBufffer[i].image = RetrievedImages[i];
+			SwapChainImageViewCI.image = SwapChainImageViewBufffer[i].image;
 
-			VK_CHECK_RESULT(vkCreateImageView(Device, &SwapChainImageViewCI, nullptr, &SwapChainBuffers[i].imageview));
+			VK_CHECK_RESULT(vkCreateImageView(Device, &SwapChainImageViewCI, nullptr, &SwapChainImageViewBufffer[i].imageview));
 		}
 
 		//Commandpool & CommandBuffers
@@ -715,7 +715,7 @@ namespace Spaceng
 
 		for (uint32_t i = 0; i < FrameBuffer.size(); i++)
 		{
-			FramebufferCI.pAttachments = &SwapChainBuffers[i].imageview;
+			FramebufferCI.pAttachments = &SwapChainImageViewBufffer[i].imageview;
 			VK_CHECK_RESULT(vkCreateFramebuffer(Device, &FramebufferCI, nullptr, &FrameBuffer[i]));
 		}
 
@@ -934,12 +934,6 @@ namespace Spaceng
 	}
 
 
-
-	void VulkanRenderer::cleanUpBuffer(VkDevice Device ,VkBuffer* buffer, VkDeviceMemory* memory)
-	{
-		VulkanBufferMemory::DeallocateBufferMemory(Device, buffer, memory);
-	}
-
 	void VulkanRenderer::PrepareAsset(VkGLTFAsset* Asset, AssetType Type , std::string filepath)
 	{
 		Asset->LoadFromFile(filepath);
@@ -950,14 +944,19 @@ namespace Spaceng
 
 	void VulkanRenderer::CleanUpAsset(VkGLTFAsset* Asset)
 	{
-		cleanUpBuffer(Device, &Asset->UniformBuffer.buffer, &Asset->UniformBuffer.memory); //Uniform Bufffer
+		cleanUpBuffer(Device, &Asset->UniformBuffer.buffer, &Asset->UniformBuffer.memory); 
 		vkDestroyDescriptorPool(Device, Asset->DescriptorPool, nullptr);
 		vkDestroyPipeline(Device, Asset->Pipeline, nullptr);
 		vkDestroyPipelineLayout(Device, Asset->PipelineLayout, nullptr);
 		vkDestroyDescriptorSetLayout(Device, Asset->DescriptorSetLayout, nullptr);
 		
-		//destroy Draw Buffers
-		//destroy commandBuffers
+		//todo : destroy Draw Buffers
+	}
+
+
+	void VulkanRenderer::cleanUpBuffer(VkDevice Device, VkBuffer* buffer, VkDeviceMemory* memory)
+	{
+		VulkanBufferMemory::DeallocateBufferMemory(Device, buffer, memory);
 	}
 
 
@@ -996,18 +995,71 @@ namespace Spaceng
 	}
 
 
-	void VulkanRenderer::Refresh(uint32_t* width, uint32_t* height, bool vsync)
+	void VulkanRenderer::Refresh(uint32_t* width, uint32_t* height, bool vsync, std::vector<VkGLTFAsset*>* Assets)
 	{
 		vkDeviceWaitIdle(Device);
 		CreateSwapChain(width, height, vsync);
-		vkDeviceWaitIdle(Device);
 		//todo: GUI Aspectratio
+		RecordCommandBuffers(Assets);
+		vkDeviceWaitIdle(Device);
 		//todo: Camera AspectRatio 
-		//todo: RecordCommandBuffers
 		//todo: update uniform Buffers (Dynamic)
 		//set refresh bool to true
 	}
-	void VulkanRenderer::render()
+
+	void VulkanRenderer::RecordCommandBuffers(std::vector<VkGLTFAsset*>* Assets)
+	{
+		VkCommandBufferBeginInfo cmdBufferBeginInfo{};
+		cmdBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+		VkClearValue clearValues[2];
+		clearValues[0].color = { { 0.1f, 0.1f, 0.1f, 1.0f } };
+		clearValues[1].depthStencil = { 1.0f, 0 };
+
+		VkRenderPassBeginInfo renderPassBeginInfo{};
+		renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		renderPassBeginInfo.renderPass = Renderpass;
+		renderPassBeginInfo.renderArea.offset.x = 0;
+		renderPassBeginInfo.renderArea.offset.y = 0;
+		renderPassBeginInfo.renderArea.extent.width = SurfaceWidth;
+		renderPassBeginInfo.renderArea.extent.height = SurfaceHeight;
+		renderPassBeginInfo.clearValueCount = 2;
+		renderPassBeginInfo.pClearValues = clearValues;
+
+		for (uint32_t i = 0; i < CommandBuffers.size(); ++i)
+		{
+			VK_CHECK_RESULT(vkBeginCommandBuffer(CommandBuffers[i], &cmdBufferBeginInfo));
+
+			renderPassBeginInfo.framebuffer = FrameBuffer[i];
+			vkCmdBeginRenderPass(CommandBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+			VkViewport Viewport{};
+			Viewport.width = static_cast<float>(SurfaceWidth);
+			Viewport.height = static_cast<float>(SurfaceHeight);
+			Viewport.minDepth = 0.0f;
+			Viewport.maxDepth = 1.0f;
+			vkCmdSetViewport(CommandBuffers[i], 0, 1, &Viewport);
+			VkRect2D rect2D{};
+			rect2D.extent.width = SurfaceWidth;
+			rect2D.extent.height = SurfaceHeight;
+			rect2D.offset.x = 0;
+			rect2D.offset.y = 0;
+			vkCmdSetScissor(CommandBuffers[i], 0, 1, &rect2D);
+			
+			for (uint32_t j =0 ; j< Assets->size(); ++j)
+			{
+				vkCmdBindDescriptorSets(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, (*Assets)[j]->PipelineLayout, 0, 1, &(*Assets)[j]->DescriptorSet, 0, NULL);
+				vkCmdBindPipeline(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, (*Assets)[j]->Pipeline);
+				(*Assets)[j]->Draw(); //to do : to be implemented
+			}
+			//todo: implement UI Command Recorder
+
+			vkCmdEndRenderPass(CommandBuffers[i]);
+
+			VK_CHECK_RESULT(vkEndCommandBuffer(CommandBuffers[i]));
+		}
+	}
+	void VulkanRenderer::render(std::vector<VkGLTFAsset*>* Assets)
 	{
 		Submitinfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 		Submitinfo.pWaitDstStageMask = &submitPipelineStages;
@@ -1025,22 +1077,22 @@ namespace Spaceng
 		// Check the Swapchain and Surface Compatability
 		{
 			if (result == VK_ERROR_OUT_OF_DATE_KHR){
-			Refresh(&SurfaceWidth,&SurfaceHeight,SurfaceVsync);
+			Refresh( &SurfaceWidth, &SurfaceHeight, SurfaceVsync, Assets);
 			}
 			return;
 		}
 		else {
 			VK_CHECK_RESULT(result);
 		}
-		// Use a fence to wait until the command buffer has finished execution before using it again
+		// Use a fence to wait until the Queue's command buffer has finished execution before using it again
+		//can use fence when Multiviewing /Multithreading: to insert a dependency from a queue to the host.
 		VK_CHECK_RESULT(vkWaitForFences(Device, 1, &QueueFences[ImageIndex], VK_TRUE, UINT64_MAX));
 		VK_CHECK_RESULT(vkResetFences(Device, 1, &QueueFences[ImageIndex]));
 
 		Submitinfo.commandBufferCount = 1;
-		Submitinfo.pCommandBuffers = &CommandBuffers[ImageIndex]; // Command buffers(s) to execute in this batch (submission)
+		Submitinfo.pCommandBuffers = &CommandBuffers[ImageIndex]; // Command buffers(s) [array per RenderPass] to execute in this batch (submission)
 
 		VK_CHECK_RESULT(vkQueueSubmit(Queue, 1, &Submitinfo, QueueFences[ImageIndex]));
-		//can use fence when Multiviewing /Multithreading: to insert a dependency from a queue to the host.
 
 		VkPresentInfoKHR presentInfo = {};
 		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -1059,7 +1111,7 @@ namespace Spaceng
 		}
 		result = fpQueuePresentKHR(Queue, &presentInfo);
 		if ((result == VK_ERROR_OUT_OF_DATE_KHR) || (result == VK_SUBOPTIMAL_KHR)) {
-			Refresh(&SurfaceWidth, &SurfaceHeight, SurfaceVsync);
+			Refresh(&SurfaceWidth, &SurfaceHeight, SurfaceVsync, Assets);
 			if (result == VK_ERROR_OUT_OF_DATE_KHR) {
 				return;
 			}
