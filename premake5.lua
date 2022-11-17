@@ -97,7 +97,7 @@ project "Spaceng"
 	
 	defines 
 	{ 
-		--"SE_DATA_ASSET = %{prj.name}",
+		"_NO_DEBUG_HEAP=1",
 		"SE_PLATFORM_WIN",
 		"_CRT_SECURE_NO_WARNINGS"
 	}
@@ -164,6 +164,7 @@ project "App"
 				
 		defines 
 		{ 
+			"_NO_DEBUG_HEAP=1",
 			"SE_PLATFORM_WIN",
 			"_CRT_SECURE_NO_WARNINGS"
 		}
