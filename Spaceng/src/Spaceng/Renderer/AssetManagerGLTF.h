@@ -3,6 +3,7 @@
 #include "VulkanMemory.h"
 
 #include "glm/glm/glm.hpp"
+#include "tinygltf/tiny_gltf.h"
 
 
 namespace Spaceng
@@ -53,8 +54,5 @@ namespace Spaceng
 			glm::mat4 view;
 			glm::vec3 camPos;
 		}UBOMatrices;
-
-
-		
 	};
 }

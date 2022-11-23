@@ -30,7 +30,8 @@ IncludeDir["imgui"] = "Spaceng/Dependency/imgui"
 IncludeDir["spdlog"] = "Spaceng/Dependency/spdlog"
 IncludeDir["VulkanSDK"] = "%{VULKAN_SDK}/Include"
 IncludeDir["optick"] = "Spaceng/Dependency/optick"
---IncludeDir["glm"] = "Spaceng/Dependency/glm"
+IncludeDir["Tinygltf"] = "Spaceng/Dependency/Tinygltf"
+IncludeDir["glm"] = "Spaceng/Dependency/glm"
 
 
 LibraryDir = {}
@@ -44,6 +45,7 @@ group "Dependencies"
 include "Spaceng/Dependency/glfw"
 include "Spaceng/Dependency/imgui"
 --requires premake file
+--include "Spaceng/Dependency/Tinygltf" (corrupted Premake)
 --include "Spaceng/Dependency/spdlog"
 --include "Spaceng/Dependency/optick"
 --include "Spaceng/Dependency/glm"
@@ -71,6 +73,7 @@ project "Spaceng"
 		"%{IncludeDir.imgui}",
 		"%{IncludeDir.spdlog}",
 		"%{IncludeDir.optick}",
+		"%{IncludeDir.Tinygltf}",
 		"%{IncludeDir.Vulkan}",
 		"%{IncludeDir.VulkanSDK}",
 		"%{IncludeDir.VulkanSDK_LocalInclude}",
