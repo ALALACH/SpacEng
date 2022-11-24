@@ -7,9 +7,12 @@
 namespace Spaceng
 {
 
-	VkResult VulkanBufferMemory::AllocateBufferMemory( Buffer& Buffer, VkDevice Device,
+	VkResult VulkanBufferMemory::AllocateBufferMemory( Buffer& Buffer, VkBufferUsageFlags usageflags, VkMemoryPropertyFlags MemoryPropertyflags, VkDevice Device,
 		VkPhysicalDeviceMemoryProperties DeviceMemoryProperties, bool descriptorAccess, bool mapAccess , void* data)
 	{
+		Buffer.usageflags = usageflags;
+		Buffer.MemoryPropertyflags = MemoryPropertyflags;
+
 		VkBufferCreateInfo BufferCreateCI{};
 		BufferCreateCI.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 		BufferCreateCI.usage = Buffer.usageflags;
@@ -71,10 +74,10 @@ namespace Spaceng
 	}
 
 
-	void VulkanBufferMemory::DeallocateBufferMemory(VkDevice Device ,VkBuffer* buffer , VkDeviceMemory* memory)
+	void VulkanBufferMemory::DeallocateBufferMemory(VkDevice* Device, VkBuffer* buffer, VkDeviceMemory* memory)
 	{
-		vkDestroyBuffer(Device, *buffer, nullptr);
-		vkFreeMemory(Device, *memory, nullptr);
+		vkDestroyBuffer(*Device, *buffer, nullptr);
+		vkFreeMemory(*Device, *memory, nullptr);
 		//VK_SPEC : If a memory object is mapped at the time it is freed, it is implicitly unmapped.
 	}
 

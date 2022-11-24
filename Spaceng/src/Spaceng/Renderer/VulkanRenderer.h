@@ -28,6 +28,7 @@ namespace Spaceng
 		void CreatePipelineCache();
 		void CreateSemaphores();
 		void SetFuncPointer();
+		void CreateCommandPool();
 
 
 
@@ -53,7 +54,7 @@ namespace Spaceng
 
 
 		//helpers
-		void cleanUpBuffer(VkDevice Device, VkBuffer* buffer, VkDeviceMemory* memory);
+		void cleanUpBuffer(VkDevice* Device, VkBuffer* buffer, VkDeviceMemory* memory);
 		VkPipelineShaderStageCreateInfo LoadShader(std::string Filename, VkShaderStageFlagBits Stage);
 		uint32_t getQueueFamilyIndex(VkQueueFlags queueFlags) const;
 		inline VkDevice GetDevice() { return Device; }

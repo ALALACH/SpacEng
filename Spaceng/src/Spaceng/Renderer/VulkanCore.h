@@ -3,7 +3,6 @@
 #include "Spaceng/Core/Core.h"
 
 
-
 #define VK_CHECK_RESULT(f)																				\
 {																										\
 	VkResult res = (f);																					\

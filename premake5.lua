@@ -32,6 +32,7 @@ IncludeDir["VulkanSDK"] = "%{VULKAN_SDK}/Include"
 IncludeDir["optick"] = "Spaceng/Dependency/optick"
 IncludeDir["Tinygltf"] = "Spaceng/Dependency/Tinygltf"
 IncludeDir["glm"] = "Spaceng/Dependency/glm"
+IncludeDir["glm"] = "Spaceng/Dependency/ktx"
 
 
 LibraryDir = {}
@@ -74,6 +75,7 @@ project "Spaceng"
 		"%{IncludeDir.spdlog}",
 		"%{IncludeDir.optick}",
 		"%{IncludeDir.Tinygltf}",
+		"%{IncludeDir.ktx}",
 		"%{IncludeDir.Vulkan}",
 		"%{IncludeDir.VulkanSDK}",
 		"%{IncludeDir.VulkanSDK_LocalInclude}",

@@ -59,6 +59,7 @@ namespace Spaceng
 		PushExtensionsandFeatures(EnabledInstanceextensions, EnabledDeviceextensions, EnableddeviceFeatures);
 		CreateInstance();
 		CreateDevice();
+		CreateCommandPool();
 		CreatePipelineCache();
 		CreateSemaphores();
 		SetFuncPointer();
@@ -327,9 +328,73 @@ namespace Spaceng
 
 
 		vkGetDeviceQueue(Device, QueueTypeFlagBitIndex.graphics,0, &Queue);
+
+
+		// Get available queue family properties
+		uint32_t queueCount;
+		vkGetPhysicalDeviceQueueFamilyProperties(PhysicalDevice, &queueCount, NULL);
+
+		std::vector<VkQueueFamilyProperties> QueueFamilyProperties(queueCount);
+		vkGetPhysicalDeviceQueueFamilyProperties(PhysicalDevice, &queueCount, QueueFamilyProperties.data());
+
+		// Iterate over each queue to learn whether it supports presenting:
+		// Find a queue with present support
+		// Will be used to present the swap chain images to the windowing system
+		std::vector<VkBool32> QueueSupportsSurfacePresent(queueCount);
+		for (uint32_t i = 0; i < queueCount; i++)
+		{
+			fpGetPhysicalDeviceSurfaceSupportKHR(PhysicalDevice, i, Surface, &QueueSupportsSurfacePresent[i]);
+		}
+
+		// Search for a graphics and a present queue in the array of queue
+	// families, try to find one that supports both
+		uint32_t graphicsQueueNodeIndex = UINT32_MAX;
+		uint32_t presentQueueNodeIndex = UINT32_MAX;
+		for (uint32_t i = 0; i < queueCount; i++)
+		{
+			if ((QueueFamilyProperties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) != 0)
+			{
+				if (graphicsQueueNodeIndex == UINT32_MAX)
+				{
+					graphicsQueueNodeIndex = i;
+				}
+
+				if (QueueSupportsSurfacePresent[i] == VK_TRUE)
+				{
+					graphicsQueueNodeIndex = i;
+					presentQueueNodeIndex = i;
+					break;
+				}
+			}
+		}
+		if (presentQueueNodeIndex == UINT32_MAX)
+		{
+			// If there's no queue that supports both present and graphics
+			// try to find a separate present queue
+			for (uint32_t i = 0; i < queueCount; ++i)
+			{
+				if (QueueSupportsSurfacePresent[i] == VK_TRUE)
+				{
+					presentQueueNodeIndex = i;
+					break;
+				}
+			}
+		}
+		// Exit if either a graphics or a presenting queue hasn't been found
+		SE_ASSERT(graphicsQueueNodeIndex != UINT32_MAX, "")
+			SE_ASSERT(presentQueueNodeIndex != UINT32_MAX, "")
+
+			queueNodeIndex = graphicsQueueNodeIndex;
 	}
 
-
+	void VulkanRenderer::CreateCommandPool()
+	{
+		VkCommandPoolCreateInfo CommandPoolCI = {};
+		CommandPoolCI.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+		CommandPoolCI.queueFamilyIndex = queueNodeIndex;
+		CommandPoolCI.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+		VK_CHECK_RESULT(vkCreateCommandPool(Device, &CommandPoolCI, nullptr, &Commandpool));
+	}
 	void VulkanRenderer::CreatePipelineCache()
 	{
 		VkPipelineCacheCreateInfo PipelineCacheCI = {};
@@ -378,61 +443,6 @@ namespace Spaceng
 		//glfw Surface Binding
 		glfwCreateWindowSurface(Instance, Window, nullptr, &Surface);
 
-		// Get available queue family properties
-		uint32_t queueCount;
-		vkGetPhysicalDeviceQueueFamilyProperties(PhysicalDevice, &queueCount, NULL);
-
-		std::vector<VkQueueFamilyProperties> QueueFamilyProperties(queueCount);
-		vkGetPhysicalDeviceQueueFamilyProperties(PhysicalDevice, &queueCount, QueueFamilyProperties.data());
-
-		// Iterate over each queue to learn whether it supports presenting:
-		// Find a queue with present support
-		// Will be used to present the swap chain images to the windowing system
-		std::vector<VkBool32> QueueSupportsSurfacePresent(queueCount);
-		for (uint32_t i = 0; i < queueCount; i++)
-		{
-			fpGetPhysicalDeviceSurfaceSupportKHR(PhysicalDevice, i, Surface, &QueueSupportsSurfacePresent[i]);
-		}
-
-		// Search for a graphics and a present queue in the array of queue
-		// families, try to find one that supports both
-		uint32_t graphicsQueueNodeIndex = UINT32_MAX;
-		uint32_t presentQueueNodeIndex = UINT32_MAX;
-		for (uint32_t i = 0; i < queueCount; i++)
-		{
-			if ((QueueFamilyProperties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) != 0)
-			{
-				if (graphicsQueueNodeIndex == UINT32_MAX)
-				{
-					graphicsQueueNodeIndex = i;
-				}
-
-				if (QueueSupportsSurfacePresent[i] == VK_TRUE)
-				{
-					graphicsQueueNodeIndex = i;
-					presentQueueNodeIndex = i;
-					break;
-				}
-			}
-		}
-		if (presentQueueNodeIndex == UINT32_MAX)
-		{
-			// If there's no queue that supports both present and graphics
-			// try to find a separate present queue
-			for (uint32_t i = 0; i < queueCount; ++i)
-			{
-				if (QueueSupportsSurfacePresent[i] == VK_TRUE)
-				{
-					presentQueueNodeIndex = i;
-					break;
-				}
-			}
-		}
-		// Exit if either a graphics or a presenting queue hasn't been found
-		SE_ASSERT(graphicsQueueNodeIndex != UINT32_MAX,"")
-		SE_ASSERT(presentQueueNodeIndex != UINT32_MAX,"")
-		
-		queueNodeIndex = graphicsQueueNodeIndex;
 
 		// Surface Formats & Space
 		uint32_t formatCount;
@@ -674,16 +684,8 @@ namespace Spaceng
 			VK_CHECK_RESULT(vkCreateImageView(Device, &SwapChainImageViewCI, nullptr, &SwapChainImageViewBufffer[i].imageview));
 		}
 
-		//Commandpool & CommandBuffers
-		vkDestroyCommandPool(Device, Commandpool, nullptr);
-		
-		VkCommandPoolCreateInfo CommandPoolCI = {};
-		CommandPoolCI.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-		CommandPoolCI.queueFamilyIndex = queueNodeIndex;
-		CommandPoolCI.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-		VK_CHECK_RESULT(vkCreateCommandPool(Device, &CommandPoolCI, nullptr, &Commandpool));
-
-
+		//CommandBuffers
+		vkFreeCommandBuffers(Device, Commandpool, static_cast<uint32_t>(CommandBuffers.size()), CommandBuffers.data());
 		CommandBuffers.clear();
 		CommandBuffers.resize(ImageCount);
 
@@ -736,7 +738,9 @@ namespace Spaceng
 
 	void VulkanRenderer::prepareUniformBuffer(VkGLTFAsset* Asset,bool mapAccess, bool descriptorAcess)
 	{
-		VulkanBufferMemory::AllocateBufferMemory(Asset->UniformBuffer, Device, deviceMemoryProperties, descriptorAcess, mapAccess, nullptr);
+		VulkanBufferMemory::AllocateBufferMemory(Asset->UniformBuffer, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+			Device, deviceMemoryProperties, descriptorAcess, mapAccess, nullptr);
 		updateUniformBuffer(Asset);
 	}
 
@@ -751,7 +755,7 @@ namespace Spaceng
 	void VulkanRenderer::prepareDescriptorSet(VkGLTFAsset* Asset)
 	{
 		uint32_t type = Asset->getType();
-		if (type == MeshType)
+		if (type == model_type)
 		{
 			//descriptorSet Layout
 			std::vector<VkDescriptorSetLayoutBinding> LayoutBindings {};
@@ -824,7 +828,7 @@ namespace Spaceng
 			writeDescriptorSet2.dstSet = Asset->DescriptorSet;
 			writeDescriptorSet2.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 			writeDescriptorSet2.dstBinding = 1;
-			writeDescriptorSet2.pImageInfo = &Asset->TextureDescriptor; //update once implemented and allocate memory for the texture object
+			writeDescriptorSet2.pImageInfo = &Asset->AssetModel.texture.TextureDescriptor; //update once implemented and allocate memory for the texture object
 			writeDescriptorSet2.descriptorCount = 1;
 
 			writeDescriptorSets.push_back(writeDescriptorSet1);
@@ -936,7 +940,7 @@ namespace Spaceng
 
 	void VulkanRenderer::PrepareAsset(VkGLTFAsset* Asset, AssetType Type , std::string filepath)
 	{
-		Asset->LoadFromFile(filepath);
+		Asset->AssetModel.LoadFromFile(&Device, &PhysicalDevice ,filepath);
 		prepareUniformBuffer(Asset);
 		prepareDescriptorSet(Asset);
 		preparePipeline(Asset);
@@ -944,17 +948,17 @@ namespace Spaceng
 
 	void VulkanRenderer::CleanUpAsset(VkGLTFAsset* Asset)
 	{
-		cleanUpBuffer(Device, &Asset->UniformBuffer.buffer, &Asset->UniformBuffer.memory); 
-		vkDestroyDescriptorPool(Device, Asset->DescriptorPool, nullptr);
+		cleanUpBuffer(&Device, &Asset->UniformBuffer.buffer, &Asset->UniformBuffer.memory); //UB
+		vkDestroyDescriptorPool(Device, Asset->DescriptorPool, nullptr); // Destroys Set
 		vkDestroyPipeline(Device, Asset->Pipeline, nullptr);
 		vkDestroyPipelineLayout(Device, Asset->PipelineLayout, nullptr);
 		vkDestroyDescriptorSetLayout(Device, Asset->DescriptorSetLayout, nullptr);
 		
-		//todo : destroy Draw Buffers
+		//todo : clean up model / texture variables
 	}
 
 
-	void VulkanRenderer::cleanUpBuffer(VkDevice Device, VkBuffer* buffer, VkDeviceMemory* memory)
+	void VulkanRenderer::cleanUpBuffer(VkDevice* Device, VkBuffer* buffer, VkDeviceMemory* memory)
 	{
 		VulkanBufferMemory::DeallocateBufferMemory(Device, buffer, memory);
 	}
@@ -1050,7 +1054,7 @@ namespace Spaceng
 			{
 				vkCmdBindDescriptorSets(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, (*Assets)[j]->PipelineLayout, 0, 1, &(*Assets)[j]->DescriptorSet, 0, NULL);
 				vkCmdBindPipeline(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, (*Assets)[j]->Pipeline);
-				(*Assets)[j]->Draw(); //to do : to be implemented
+				(*Assets)[j]->AssetModel.Draw(); //to do : to be implemented
 			}
 			//todo: implement UI Command Recorder
 

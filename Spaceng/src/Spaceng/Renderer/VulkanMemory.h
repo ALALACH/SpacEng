@@ -7,8 +7,8 @@ namespace Spaceng
 {
 	struct Buffer
 	{
-		VkBufferUsageFlags usageflags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-		VkMemoryPropertyFlags MemoryPropertyflags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+		VkBufferUsageFlags usageflags;
+		VkMemoryPropertyFlags MemoryPropertyflags;
 		VkDeviceSize size;
 		VkBuffer buffer = VK_NULL_HANDLE;
 		VkDeviceMemory memory = VK_NULL_HANDLE;
@@ -19,13 +19,13 @@ namespace Spaceng
 	class VulkanBufferMemory
 	{
 	public:
-		static VkResult AllocateBufferMemory(Buffer& Buffer, VkDevice Device, VkPhysicalDeviceMemoryProperties DeviceMemProperties,
-			bool descriptorAccess, bool mapAccess, void* data = nullptr);
+		static VkResult AllocateBufferMemory(Buffer& Buffer, VkBufferUsageFlags usageflags, VkMemoryPropertyFlags MemoryPropertyflags, VkDevice Device,
+			VkPhysicalDeviceMemoryProperties DeviceMemProperties, bool descriptorAccess, bool mapAccess, void* data = nullptr);
 
-		static void DeallocateBufferMemory(VkDevice Device, VkBuffer* buffer, VkDeviceMemory* memory);
+		static void DeallocateBufferMemory(VkDevice* Device, VkBuffer* buffer, VkDeviceMemory* memory);
 	
 		static uint32_t getMemoryType(VkPhysicalDeviceMemoryProperties DeviceMemProperties, VkMemoryPropertyFlags memoryPropertyFlags,
-			VkMemoryRequirements memReq, VkBool32* memTypeFound);
+			VkMemoryRequirements memReq, VkBool32* memTypeFound = nullptr);
 	};
 
 }

@@ -22,18 +22,12 @@ namespace Spaceng
 	{
 		std::string Dir= Application::Get().getProjectDirectory();
 
-		LoadAsset("triangle", Model, Dir, true);
-		LoadAsset("triangle", Model, Dir, true);
-		LoadAsset("triangle", Model, Dir, true);
-		LoadAsset("triangle", Model, Dir, true);
-		LoadAsset("triangle", Model, Dir, true);
-		LoadAsset("triangle", Model, Dir, true);
-		LoadAsset("triangle", Model, Dir, true);
-		LoadAsset("triangle", Model, Dir, true);
-		LoadAsset("triangle", Model, Dir, true);
-		LoadAsset("triangle", Model, Dir, true);
-		LoadAsset("triangle", Model, Dir, true);
-		LoadAsset("triangle", Model, Dir, true);
+		LoadAsset("triangle", model_type, Dir, true);
+		LoadAsset("triangle", model_type, Dir, true);
+		LoadAsset("triangle", model_type, Dir, true);
+		LoadAsset("triangle", model_type, Dir, true);
+		LoadAsset("triangle", model_type, Dir, true);
+	
 
 	}
 
