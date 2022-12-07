@@ -703,6 +703,8 @@ namespace Spaceng
 		//Framebuffer
 		for (VkFramebuffer& framebuffer : FrameBuffer)
 			vkDestroyFramebuffer(Device, framebuffer, nullptr);
+		FrameBuffer.clear();
+		FrameBuffer.resize(ImageCount);
 
 		VkFramebufferCreateInfo FramebufferCI {};
 		FramebufferCI.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -711,9 +713,6 @@ namespace Spaceng
 		FramebufferCI.width = *width;
 		FramebufferCI.height = *height;
 		FramebufferCI.layers = 1;
-
-		FrameBuffer.clear();
-		FrameBuffer.resize(ImageCount);
 
 		for (uint32_t i = 0; i < FrameBuffer.size(); i++)
 		{
@@ -724,9 +723,9 @@ namespace Spaceng
 		//Synchronisation premitives
 		for (auto& fence : QueueFences)
 			vkDestroyFence(Device, fence, nullptr);
-
 		QueueFences.clear();
 		QueueFences.resize(CommandBuffers.size());
+
 		VkFenceCreateInfo FenceCI = {};
 		FenceCI.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 		FenceCI.flags = VK_FENCE_CREATE_SIGNALED_BIT; //fence object is created in the signaled state
@@ -1054,7 +1053,7 @@ namespace Spaceng
 			{
 				vkCmdBindDescriptorSets(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, (*Assets)[j]->PipelineLayout, 0, 1, &(*Assets)[j]->DescriptorSet, 0, NULL);
 				vkCmdBindPipeline(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, (*Assets)[j]->Pipeline);
-				(*Assets)[j]->AssetModel.Draw(); //to do : to be implemented
+				(*Assets)[j]->AssetModel.DrawVerticesAndIndices(); //to do : to be implemented
 			}
 			//todo: implement UI Command Recorder
 

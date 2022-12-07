@@ -16,10 +16,9 @@
 [submodule "Spaceng/Dependency/glm"]
 	path = Spaceng/Dependency/glm
 	url = https://github.com/Groovounet/glm
-[submodule "Spaceng/Dependency/Tinygltf"]
-	path = Spaceng/Dependency/Tinygltf
+[submodule "Spaceng/Dependency/tinygltf"]
+	path = Spaceng/Dependency/tinygltf
 	url = https://github.com/syoyo/tinygltf
-
 
 
 

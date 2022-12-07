@@ -110,8 +110,8 @@ namespace Spaceng
 		 typedef struct _SwapChainBuffers {
 			 VkImage image;
 			 VkImageView imageview;
-		 }SCBuffer;
-		 std::vector<SCBuffer> SwapChainImageViewBufffer;
+		 }SwapchainBuffer;
+		 std::vector<SwapchainBuffer> SwapChainImageViewBufffer;
 		 std::vector<VkImage> RetrievedImages;
 		 uint32_t ImageCount= 0;
 

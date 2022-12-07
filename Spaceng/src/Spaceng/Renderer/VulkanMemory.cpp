@@ -13,12 +13,12 @@ namespace Spaceng
 		Buffer.usageflags = usageflags;
 		Buffer.MemoryPropertyflags = MemoryPropertyflags;
 
-		VkBufferCreateInfo BufferCreateCI{};
-		BufferCreateCI.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-		BufferCreateCI.usage = Buffer.usageflags;
-		BufferCreateCI.size = Buffer.size;
-		BufferCreateCI.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		VK_CHECK_RESULT(vkCreateBuffer(Device, &BufferCreateCI, nullptr, &Buffer.buffer));
+		VkBufferCreateInfo BufferCI{};
+		BufferCI.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+		BufferCI.usage = Buffer.usageflags;
+		BufferCI.size = Buffer.size;
+		BufferCI.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		VK_CHECK_RESULT(vkCreateBuffer(Device, &BufferCI, nullptr, &Buffer.buffer));
 
 		VkMemoryRequirements memReq;
 		vkGetBufferMemoryRequirements(Device, Buffer.buffer, &memReq);

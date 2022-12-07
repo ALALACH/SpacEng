@@ -7,10 +7,10 @@
 #include <glm/glm/gtc/type_ptr.hpp>
 
 
-#include "Tinygltf/tiny_gltf.h"
+#include "tinygltf/tiny_gltf.h"
 
-#include "ktx.h"
-#include "ktxvulkan.h"
+#include "ktx/include/ktx.h"
+#include "ktx/include/ktxvulkan.h"
 
 
 namespace Spaceng
@@ -22,6 +22,51 @@ namespace Spaceng
 		model_type,
 		Simple_Mesh_type
 	};
+
+
+	class Texture
+	{
+		friend class VulkanRenderer;
+	public:
+		Texture();
+		~Texture();
+
+		void LoadfromglTfImage(tinygltf::Image& gltfimage, std::string path, VkDevice* device, VkPhysicalDevice* PhysicalDevice, VkQueue copyQueue);
+
+		void loadFromFile(std::string filename, VkFormat format, VkDevice* Device, VkPhysicalDevice* PhysicalDevice, VkCommandPool pool, VkQueue copyQueue,
+			VkImageUsageFlags imageUsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT,
+			VkImageLayout ImageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL , bool linear = false);
+
+		void Destroy(VkDevice* Device);
+
+	private:
+		VkImage image = VK_NULL_HANDLE;
+		VkImageLayout imageLayout;
+		VkDeviceMemory imagedeviceMemory = VK_NULL_HANDLE;
+		VkImageView view = VK_NULL_HANDLE;
+		uint32_t width = 0, height = 0;
+		uint32_t mipLevels = 0;
+		uint32_t layerCount = 0;
+		VkSampler sampler = VK_NULL_HANDLE;
+		VkDescriptorImageInfo TextureDescriptor;
+	};
+
+
+
+	class Model
+	{
+		friend class VulkanRenderer;
+	public:
+		Model();
+		~Model();
+		void LoadFromFile(VkDevice* Device, VkPhysicalDevice* PhysicalDevice, std::string filename);
+		void DrawVerticesAndIndices();
+
+	private:
+		Texture texture;
+
+	};
+
 
 	class VkGLTFAsset
 	{
@@ -61,47 +106,4 @@ namespace Spaceng
 			glm::vec3 camPos;
 		}UBOMatrices;
 	};
-
-	class Texture
-	{
-		friend class VulkanRenderer;
-	public:
-		Texture();
-		~Texture();
-
-		void LoadfromglTfImage(tinygltf::Image& gltfimage, std::string path, VkDevice* device, VkQueue copyQueue);
-
-		void loadFromFile(std::string filename, VkFormat format, VkDevice* Device, VkPhysicalDevice* PhysicalDevice,VkCommandPool pool , VkQueue copyQueue,
-			VkImageUsageFlags imageUsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT,
-			VkImageLayout ImageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-		void Destroy();
-
-	private:
-		VkImage image = VK_NULL_HANDLE;
-		VkImageLayout imageLayout ;
-		VkDeviceMemory imagedeviceMemory = VK_NULL_HANDLE;
-		VkImageView view = VK_NULL_HANDLE;
-		uint32_t width =0, height = 0;
-		uint32_t mipLevels =0;
-		uint32_t layerCount =0;
-		VkSampler sampler = VK_NULL_HANDLE;
-		VkDescriptorImageInfo TextureDescriptor;
-	};
-
-	class Model
-	{
-		friend class VulkanRenderer;
-	public :
-		Model();
-		~Model();
-		void LoadFromFile(VkDevice* Device ,VkPhysicalDevice* PhysicalDevice,std::string filename);
-		void Draw();
-
-	private:
-		Texture texture;
-
-	};
-
-	
 }
