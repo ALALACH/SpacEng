@@ -10,3 +10,4 @@ bin-int/
 **.vcxproj.filters
 **.vcxproj.user
 **.csproj
+/Spaceng/Dependency/ktx
