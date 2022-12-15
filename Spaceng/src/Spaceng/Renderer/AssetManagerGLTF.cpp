@@ -1,6 +1,10 @@
 #include "PCH.h"
 #include"AssetManagerGLTF.h"
 
+
+#include "tinygltf/stb_image.h"
+
+
 namespace Spaceng
 {
 	Model::Model()
@@ -50,31 +54,27 @@ namespace Spaceng
 
 
 	//Texture
-	/*
+	
 	void Texture::loadFromFile(std::string filename, VkFormat format, VkDevice* Device,VkPhysicalDevice* PhysicalDevice, VkCommandPool pool, VkQueue copyQueue,
 		VkImageUsageFlags imageUsageFlags, VkImageLayout ImageLayout, bool linear)
 	{
-		ktxTexture* KtxTexture;
-		std::ifstream f(filename.c_str());
-		SE_ASSERT(!f.fail(), "Could not Open File");
-		ktxResult result = ktxTexture_CreateFromNamedFile(filename.c_str(), KTX_TEXTURE_CREATE_LOAD_IMAGE_DATA_BIT, &KtxTexture);
-		SE_ASSERT(result == KTX_SUCCESS, "Could not load file");
 
-		width = KtxTexture->baseWidth;
-		height = KtxTexture->baseHeight;
-		mipLevels = KtxTexture->numLevels;
+		int stb_width, stb_height, stb_channels;
+		void* ImgData =stbi_load(filename.c_str(), &stb_width, &stb_height, &stb_channels, 4);
+		uint32_t ImgSize = stb_width * stb_height * 4;
+		SE_ASSERT(!ImgData, "Could not load File");
+		
 
-		ktx_uint8_t* ktxTextureData = ktxTexture_GetData(KtxTexture);
-		ktx_size_t ktxTextureSize = KtxTexture->dataSize;
+		width = stb_width;
+		height = stb_height;
+		mipLevels = (uint32_t)std::floor(std::log2(glm::min(stb_width, stb_height))) + 1;
 
-		//format
+	
+
+		//format : check Availability
 		VkFormatProperties formatProperties;
 		vkGetPhysicalDeviceFormatProperties(*PhysicalDevice, format, &formatProperties);
 
-
-		//Optimal Image Creation
-		//Default
-		//Linear Implementation Added but obscured
 		//CopyCommand
 		VkCommandBufferAllocateInfo commandBufferAllocateInfo{};
 		commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -87,7 +87,9 @@ namespace Spaceng
 		cmdBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		VK_CHECK_RESULT(vkBeginCommandBuffer(CopyCmd, &cmdBufferBeginInfo));
 
-		if (!linear)
+		if (!linear) 
+		//Optimal Image Creation
+		//Linear Implementation Added but obscured
 		{
 			//memory
 			VkMemoryRequirements memReqs;
@@ -96,7 +98,7 @@ namespace Spaceng
 
 			VkBufferCreateInfo BufferCI{};
 			BufferCI.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-			BufferCI.size = ktxTextureSize;
+			BufferCI.size = ImgSize;
 			BufferCI.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 			BufferCI.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 			VK_CHECK_RESULT(vkCreateBuffer(*Device, &BufferCI, nullptr, &stagingbuffer));
@@ -114,7 +116,7 @@ namespace Spaceng
 			//Host-Access
 			void* data;
 			VK_CHECK_RESULT(vkMapMemory(*Device, memory, 0, memReqs.size, 0, &data));
-			memcpy(data, ktxTextureData, memReqs.size);
+			memcpy(data, ImgData, memReqs.size);
 			vkUnmapMemory(*Device, memory);
 
 
@@ -123,19 +125,15 @@ namespace Spaceng
 
 			for (uint32_t i = 0; i < mipLevels; i++)
 			{
-				ktx_size_t offset;
-				KTX_error_code result = ktxTexture_GetImageOffset(KtxTexture, i, 0, 0, &offset);
-				SE_ASSERT(result == KTX_SUCCESS , "Couldn't get image offset");
-
 				VkBufferImageCopy bufferCopyRegion = {};
 				bufferCopyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 				bufferCopyRegion.imageSubresource.mipLevel = i;
 				bufferCopyRegion.imageSubresource.baseArrayLayer = 0;
 				bufferCopyRegion.imageSubresource.layerCount = 1;
-				bufferCopyRegion.imageExtent.width = std::max(1u, KtxTexture->baseWidth >> i);
-				bufferCopyRegion.imageExtent.height = std::max(1u, KtxTexture->baseHeight >> i);
+				bufferCopyRegion.imageExtent.width = std::max(1u, width >> i);
+				bufferCopyRegion.imageExtent.height = std::max(1u, height >> i);
 				bufferCopyRegion.imageExtent.depth = 1;
-				bufferCopyRegion.bufferOffset = offset;
+				bufferCopyRegion.bufferOffset = 0;
 
 				bufferCopyRegions.push_back(bufferCopyRegion);
 			}
@@ -163,12 +161,46 @@ namespace Spaceng
 
 			memAllocInfo.allocationSize = memReqs.size;
 
-			memAllocInfo.memoryTypeIndex = VulkanBufferMemory::getMemoryType(deviceMemoryProperties, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, memReqs);
-			VK_CHECK_RESULT(vkAllocateMemory(*Device, &memAllocInfo, nullptr, &memory));
-			VK_CHECK_RESULT(vkBindImageMemory(*Device, image, memory, 0));
+			memAllocInfo.memoryTypeIndex = VulkanBufferMemory::getMemoryType(deviceMemoryProperties, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, memReqs);
+			VK_CHECK_RESULT(vkAllocateMemory(*Device, &memAllocInfo, nullptr, &imagedeviceMemory));
+			VK_CHECK_RESULT(vkBindImageMemory(*Device, image, imagedeviceMemory, 0));
 
 			{
-				//Image Memory Layout Optimal for copying
+				// Copy Layout
+				VkImageSubresourceRange subresourceRange = {};
+				subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+				subresourceRange.baseMipLevel = 0;
+				subresourceRange.levelCount = mipLevels;
+				subresourceRange.layerCount = 1;
+				VkImageMemoryBarrier imageMemoryBarrier{};
+				imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+				imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+				imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+				imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+				imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+				imageMemoryBarrier.srcAccessMask = 0;
+				imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+				imageMemoryBarrier.image = image;
+				imageMemoryBarrier.subresourceRange = subresourceRange;
+
+				// Source pipeline stage is host write/read exection (VK_PIPELINE_STAGE_HOST_BIT)
+				// Destination pipeline stage is copy command exection (VK_PIPELINE_STAGE_TRANSFER_BIT)
+				vkCmdPipelineBarrier(
+					CopyCmd,
+					VK_PIPELINE_STAGE_HOST_BIT,
+					VK_PIPELINE_STAGE_TRANSFER_BIT,
+					0,
+					0, nullptr,
+					0, nullptr,
+					1, &imageMemoryBarrier);
+			}
+
+			vkCmdCopyBufferToImage(CopyCmd, stagingbuffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 
+				static_cast<uint32_t>(bufferCopyRegions.size()), bufferCopyRegions.data());
+
+			{
+				// Shader Layout
+				imageLayout = ImageLayout;
 				VkImageSubresourceRange subresourceRange = {};
 				subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 				subresourceRange.baseMipLevel = 0;
@@ -178,56 +210,25 @@ namespace Spaceng
 				imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
 				imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 				imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-				imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-				imageMemoryBarrier.srcAccessMask = 0;
-				imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+				imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+				imageMemoryBarrier.newLayout = ImageLayout;  // VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+				imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+				imageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 				imageMemoryBarrier.image = image;
 				imageMemoryBarrier.subresourceRange = subresourceRange;
 
+				// Source pipeline stage stage is copy command exection (VK_PIPELINE_STAGE_TRANSFER_BIT)
+				// Destination pipeline stage fragment shader access (VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT)
 				vkCmdPipelineBarrier(
 					CopyCmd,
-					VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-					VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+					VK_PIPELINE_STAGE_TRANSFER_BIT,
+					VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
 					0,
 					0, nullptr,
 					0, nullptr,
 					1, &imageMemoryBarrier);
 			}
-
-			//Copying from staging buffer to Image then setting Layout again
-
-			vkCmdCopyBufferToImage(CopyCmd, stagingbuffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 
-				static_cast<uint32_t>(bufferCopyRegions.size()), bufferCopyRegions.data());
-
-			{
-			//Image Memory Layout :Shader Read-only Layout
-			imageLayout = ImageLayout;
-			VkImageSubresourceRange subresourceRange = {};
-			subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			subresourceRange.baseMipLevel = 0;
-			subresourceRange.levelCount = 1;
-			subresourceRange.layerCount = 1;
-			VkImageMemoryBarrier imageMemoryBarrier{};
-			imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-			imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-			imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-			imageMemoryBarrier.newLayout = ImageLayout;
-			imageMemoryBarrier.image = image;
-			imageMemoryBarrier.subresourceRange = subresourceRange;
-
-			vkCmdPipelineBarrier(
-				CopyCmd,
-				VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-				VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-				0,
-				0, nullptr,
-				0, nullptr,
-				1, &imageMemoryBarrier);
-			}
-			//Submitting CopyCmd
-
+			
 			VK_CHECK_RESULT(vkEndCommandBuffer(CopyCmd));
 
 			VkSubmitInfo submitInfo{};
@@ -248,9 +249,8 @@ namespace Spaceng
 			//Local stagingbuffer Cleanup
 			vkFreeMemory(*Device, memory, nullptr);
 			vkDestroyBuffer(*Device, stagingbuffer, nullptr);
-
 		}
-
+#if Linear
 		else
 		{ 
 			SE_ASSERT(formatProperties.linearTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT , "Format Feature missing");
@@ -295,7 +295,7 @@ namespace Spaceng
 			//Host-Access
 			void* data;
 			VK_CHECK_RESULT(vkMapMemory(*Device, memory, 0, memReqs.size, 0, &data));
-			memcpy(data, ktxTextureData, memReqs.size);
+			memcpy(data, ImgData, memReqs.size);
 			vkUnmapMemory(*Device, memory);
 
 			image = MappableImage;
@@ -376,8 +376,9 @@ namespace Spaceng
 			vkDestroyFence(*Device, fence, nullptr);
 			vkFreeCommandBuffers(*Device, pool, 1, &CopyCmd);
 		}
-		//cleanup KTX
-		ktxTexture_Destroy(KtxTexture);
+#endif
+		//cleanup KTX/stb
+		stbi_image_free(ImgData);
 
 		//Sampler
 		VkSamplerCreateInfo samplerCreateInfo = {};
@@ -391,7 +392,7 @@ namespace Spaceng
 		samplerCreateInfo.mipLodBias = 0.0f;
 		samplerCreateInfo.compareOp = VK_COMPARE_OP_NEVER;
 		samplerCreateInfo.minLod = 0.0f;
-		samplerCreateInfo.maxLod =0.0f;
+		samplerCreateInfo.maxLod = (float) mipLevels;
 		VkPhysicalDeviceFeatures DeviceFeatures;
 		vkGetPhysicalDeviceFeatures(*PhysicalDevice, &DeviceFeatures);
 		VkPhysicalDeviceProperties DeviceProperties;
@@ -408,7 +409,7 @@ namespace Spaceng
 		ImageviewCI.format = format;
 		ImageviewCI.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
 		ImageviewCI.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
-		ImageviewCI.subresourceRange.levelCount = 1;
+		ImageviewCI.subresourceRange.levelCount = mipLevels;
 		ImageviewCI.image = image;
 		VK_CHECK_RESULT(vkCreateImageView(*Device, &ImageviewCI, nullptr, &view));
 
@@ -416,8 +417,11 @@ namespace Spaceng
 		TextureDescriptor.sampler = sampler;
 		TextureDescriptor.imageView = view;
 		TextureDescriptor.imageLayout = imageLayout;
+
+
+		//todo : Generate Mips using VkCmdBlitImage();
 	}
-	*/
+
 	void Texture::LoadfromglTfImage(tinygltf::Image& gltfimage, std::string path, VkDevice* device, VkPhysicalDevice* PhysicalDevice, VkQueue copyQueue)
 	{
 
