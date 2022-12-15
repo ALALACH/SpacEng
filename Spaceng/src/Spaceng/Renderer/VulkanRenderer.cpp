@@ -59,10 +59,9 @@ namespace Spaceng
 		PushExtensionsandFeatures(EnabledInstanceextensions, EnabledDeviceextensions, EnableddeviceFeatures);
 		CreateInstance();
 		CreateDevice();
-		CreateCommandPool();
+		SetupFunctionPtr();
 		CreatePipelineCache();
 		CreateSemaphores();
-		SetFuncPointer();
 	};
 
 
@@ -330,6 +329,58 @@ namespace Spaceng
 		vkGetDeviceQueue(Device, QueueTypeFlagBitIndex.graphics,0, &Queue);
 
 
+
+		
+	}
+	void VulkanRenderer::SetupFunctionPtr() 
+	{
+		//set instance Fnc
+		fpGetPhysicalDeviceSurfaceSupportKHR = reinterpret_cast<PFN_vkGetPhysicalDeviceSurfaceSupportKHR>(vkGetInstanceProcAddr(Instance, "vkGetPhysicalDeviceSurfaceSupportKHR"));
+		fpGetPhysicalDeviceSurfaceCapabilitiesKHR = reinterpret_cast<PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR>(vkGetInstanceProcAddr(Instance, "vkGetPhysicalDeviceSurfaceCapabilitiesKHR"));
+		fpGetPhysicalDeviceSurfaceFormatsKHR = reinterpret_cast<PFN_vkGetPhysicalDeviceSurfaceFormatsKHR>(vkGetInstanceProcAddr(Instance, "vkGetPhysicalDeviceSurfaceFormatsKHR"));
+		fpGetPhysicalDeviceSurfacePresentModesKHR = reinterpret_cast<PFN_vkGetPhysicalDeviceSurfacePresentModesKHR>(vkGetInstanceProcAddr(Instance, "vkGetPhysicalDeviceSurfacePresentModesKHR"));
+		//set Device Fnc
+		fpCreateSwapchainKHR = reinterpret_cast<PFN_vkCreateSwapchainKHR>(vkGetDeviceProcAddr(Device, "vkCreateSwapchainKHR"));
+		fpDestroySwapchainKHR = reinterpret_cast<PFN_vkDestroySwapchainKHR>(vkGetDeviceProcAddr(Device, "vkDestroySwapchainKHR"));
+		fpGetSwapchainImagesKHR = reinterpret_cast<PFN_vkGetSwapchainImagesKHR>(vkGetDeviceProcAddr(Device, "vkGetSwapchainImagesKHR"));
+		fpAcquireNextImageKHR = reinterpret_cast<PFN_vkAcquireNextImageKHR>(vkGetDeviceProcAddr(Device, "vkAcquireNextImageKHR"));
+		fpQueuePresentKHR = reinterpret_cast<PFN_vkQueuePresentKHR>(vkGetDeviceProcAddr(Device, "vkQueuePresentKHR"));
+	}
+
+	void VulkanRenderer::CreatePipelineCache()
+	{
+		VkPipelineCacheCreateInfo PipelineCacheCI = {};
+		PipelineCacheCI.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
+		PipelineCacheCI.pNext = NULL;
+		VK_CHECK_RESULT(vkCreatePipelineCache(Device, &PipelineCacheCI, nullptr, &PipelineCache));
+	}
+
+
+	void VulkanRenderer::CreateSemaphores()
+	{
+		VkSemaphoreCreateInfo SemaphoreCI{};
+		SemaphoreCI.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+		VK_CHECK_RESULT(vkCreateSemaphore(Device, &SemaphoreCI, nullptr, &DelayBeforeCommandExecution));
+		VK_CHECK_RESULT(vkCreateSemaphore(Device, &SemaphoreCI, nullptr, &CommandExecutionComplete));
+	}
+
+
+	void VulkanRenderer::SetupDepthBuffer()
+	{
+		//Img
+		//Memalloc
+		//Imgview
+		//implement in Destructor
+		//TODO : Implement Depthbuffers later for Framebuffers and Renderpass
+	}
+
+
+	void VulkanRenderer::CreateSurfacePrimitives(GLFWwindow* Window)
+	{
+		//Init Surface
+		glfwCreateWindowSurface(Instance, Window, nullptr, &Surface);
+
+
 		// Get available queue family properties
 		uint32_t queueCount;
 		vkGetPhysicalDeviceQueueFamilyProperties(PhysicalDevice, &queueCount, NULL);
@@ -347,7 +398,7 @@ namespace Spaceng
 		}
 
 		// Search for a graphics and a present queue in the array of queue
-	// families, try to find one that supports both
+		// families, try to find one that supports both
 		uint32_t graphicsQueueNodeIndex = UINT32_MAX;
 		uint32_t presentQueueNodeIndex = UINT32_MAX;
 		for (uint32_t i = 0; i < queueCount; i++)
@@ -382,67 +433,9 @@ namespace Spaceng
 		}
 		// Exit if either a graphics or a presenting queue hasn't been found
 		SE_ASSERT(graphicsQueueNodeIndex != UINT32_MAX, "")
-			SE_ASSERT(presentQueueNodeIndex != UINT32_MAX, "")
+		SE_ASSERT(presentQueueNodeIndex != UINT32_MAX, "")
 
-			queueNodeIndex = graphicsQueueNodeIndex;
-	}
-
-	void VulkanRenderer::CreateCommandPool()
-	{
-		VkCommandPoolCreateInfo CommandPoolCI = {};
-		CommandPoolCI.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-		CommandPoolCI.queueFamilyIndex = queueNodeIndex;
-		CommandPoolCI.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-		VK_CHECK_RESULT(vkCreateCommandPool(Device, &CommandPoolCI, nullptr, &Commandpool));
-	}
-	void VulkanRenderer::CreatePipelineCache()
-	{
-		VkPipelineCacheCreateInfo PipelineCacheCI = {};
-		PipelineCacheCI.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
-		PipelineCacheCI.pNext = NULL;
-		VK_CHECK_RESULT(vkCreatePipelineCache(Device, &PipelineCacheCI, nullptr, &PipelineCache));
-	}
-
-
-	void VulkanRenderer::CreateSemaphores()
-	{
-		VkSemaphoreCreateInfo SemaphoreCI{};
-		SemaphoreCI.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-		VK_CHECK_RESULT(vkCreateSemaphore(Device, &SemaphoreCI, nullptr, &DelayBeforeCommandExecution));
-		VK_CHECK_RESULT(vkCreateSemaphore(Device, &SemaphoreCI, nullptr, &CommandExecutionComplete));
-	}
-	void VulkanRenderer::SetFuncPointer()
-	{
-		fpGetPhysicalDeviceSurfaceSupportKHR = reinterpret_cast<PFN_vkGetPhysicalDeviceSurfaceSupportKHR>(vkGetInstanceProcAddr(Instance, "vkGetPhysicalDeviceSurfaceSupportKHR"));
-		fpGetPhysicalDeviceSurfaceCapabilitiesKHR = reinterpret_cast<PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR>(vkGetInstanceProcAddr(Instance, "vkGetPhysicalDeviceSurfaceCapabilitiesKHR"));
-		fpGetPhysicalDeviceSurfaceFormatsKHR = reinterpret_cast<PFN_vkGetPhysicalDeviceSurfaceFormatsKHR>(vkGetInstanceProcAddr(Instance, "vkGetPhysicalDeviceSurfaceFormatsKHR"));
-		fpGetPhysicalDeviceSurfacePresentModesKHR = reinterpret_cast<PFN_vkGetPhysicalDeviceSurfacePresentModesKHR>(vkGetInstanceProcAddr(Instance, "vkGetPhysicalDeviceSurfacePresentModesKHR"));
-		fpCreateSwapchainKHR = reinterpret_cast<PFN_vkCreateSwapchainKHR>(vkGetDeviceProcAddr(Device, "vkCreateSwapchainKHR"));
-		fpDestroySwapchainKHR = reinterpret_cast<PFN_vkDestroySwapchainKHR>(vkGetDeviceProcAddr(Device, "vkDestroySwapchainKHR"));
-		fpGetSwapchainImagesKHR = reinterpret_cast<PFN_vkGetSwapchainImagesKHR>(vkGetDeviceProcAddr(Device, "vkGetSwapchainImagesKHR"));
-		fpAcquireNextImageKHR = reinterpret_cast<PFN_vkAcquireNextImageKHR>(vkGetDeviceProcAddr(Device, "vkAcquireNextImageKHR"));
-		fpQueuePresentKHR = reinterpret_cast<PFN_vkQueuePresentKHR>(vkGetDeviceProcAddr(Device, "vkQueuePresentKHR"));
-
-	}
-
-	void VulkanRenderer::SetupDepthBuffer()
-	{
-		//Img
-		//Memalloc
-		//Imgview
-		//implement in Destructor
-		//TODO : Implement Depthbuffers later for Framebuffers and Renderpass
-	}
-
-
-	void VulkanRenderer::CreateSurface(GLFWwindow* Window)
-	{
-		//------------------------------------------------------------------------------------------------------------
-		//Init Surface
-
-		//glfw Surface Binding
-		glfwCreateWindowSurface(Instance, Window, nullptr, &Surface);
-
+		queueNodeIndex = graphicsQueueNodeIndex;
 
 		// Surface Formats & Space
 		uint32_t formatCount;
@@ -478,7 +471,7 @@ namespace Spaceng
 			}
 		}
 
-		//RenderPass : required by Pipeline, Requires Format , can't be refreshed
+		//RenderPass
 		VkAttachmentDescription colorAttachmentDescription{};
 		colorAttachmentDescription.format = colorFormat;
 		colorAttachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -521,6 +514,14 @@ namespace Spaceng
 		renderPassInfo.pDependencies = &dependency;
 
 		VK_CHECK_RESULT(vkCreateRenderPass(Device, &renderPassInfo, nullptr, &Renderpass));
+
+
+		//CommandPool 
+		VkCommandPoolCreateInfo CommandPoolCI = {};
+		CommandPoolCI.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+		CommandPoolCI.queueFamilyIndex = queueNodeIndex;
+		CommandPoolCI.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+		VK_CHECK_RESULT(vkCreateCommandPool(Device, &CommandPoolCI, nullptr, &Commandpool));
 	}
 
 

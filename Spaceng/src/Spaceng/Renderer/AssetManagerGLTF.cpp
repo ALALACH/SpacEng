@@ -3,6 +3,22 @@
 
 namespace Spaceng
 {
+	Model::Model()
+	{
+
+	}
+	Model::~Model()
+	{
+
+	}
+	Texture::Texture()
+	{
+
+	}
+	Texture::~Texture()
+	{
+
+	}
 
 	VkGLTFAsset::VkGLTFAsset(std::string name ,AssetType type, bool DepthStencil, std::string filepath)
 	{
@@ -34,7 +50,7 @@ namespace Spaceng
 
 
 	//Texture
-
+	/*
 	void Texture::loadFromFile(std::string filename, VkFormat format, VkDevice* Device,VkPhysicalDevice* PhysicalDevice, VkCommandPool pool, VkQueue copyQueue,
 		VkImageUsageFlags imageUsageFlags, VkImageLayout ImageLayout, bool linear)
 	{
@@ -401,7 +417,7 @@ namespace Spaceng
 		TextureDescriptor.imageView = view;
 		TextureDescriptor.imageLayout = imageLayout;
 	}
-
+	*/
 	void Texture::LoadfromglTfImage(tinygltf::Image& gltfimage, std::string path, VkDevice* device, VkPhysicalDevice* PhysicalDevice, VkQueue copyQueue)
 	{
 

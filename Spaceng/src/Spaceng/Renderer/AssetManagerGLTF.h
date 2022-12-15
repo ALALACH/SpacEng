@@ -7,10 +7,10 @@
 #include <glm/glm/gtc/type_ptr.hpp>
 
 
+//stb_image included in Tinygltf
+#define STB_IMAGE_IMPLEMENTATION
 #include "tinygltf/tiny_gltf.h"
 
-#include "ktx/include/ktx.h"
-#include "ktx/include/ktxvulkan.h"
 
 
 namespace Spaceng

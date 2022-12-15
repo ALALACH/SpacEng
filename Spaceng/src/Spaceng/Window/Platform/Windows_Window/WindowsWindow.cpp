@@ -47,7 +47,7 @@ namespace Spaceng {
 		glfwSetWindowPos(m_Window, Window_Data.posx, Window_Data.posy);
 
 		
-		Renderer->CreateSurface(m_Window);
+		Renderer->CreateSurfacePrimitives(m_Window);
 		Renderer->CreateSwapChain(&Window_Data.Width,&Window_Data.Height,Window_Data.Vsync);
 
 		//glfwMakeContextCurrent(m_Window);

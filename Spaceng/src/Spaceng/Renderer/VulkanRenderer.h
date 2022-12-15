@@ -27,12 +27,11 @@ namespace Spaceng
 		void SetupDepthBuffer();
 		void CreatePipelineCache();
 		void CreateSemaphores();
-		void SetFuncPointer();
-		void CreateCommandPool();
+		void SetupFunctionPtr();
 
 
 
-		void CreateSurface(GLFWwindow* Window);
+		void CreateSurfacePrimitives(GLFWwindow* Window);
 		void CreateSwapChain(uint32_t* width, uint32_t* height, bool vsync);
 
 		void prepareUniformBuffer(VkGLTFAsset* Asset, bool mapAccess = true, bool descriptorAcess = true);
