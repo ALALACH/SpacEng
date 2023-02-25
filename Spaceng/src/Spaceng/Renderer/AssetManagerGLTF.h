@@ -18,7 +18,7 @@ namespace Spaceng
 
 	enum AssetType
 	{
-		texture_type,
+		texture_On_Screen,
 		model_type,
 		Simple_Mesh_type
 	};
@@ -32,21 +32,19 @@ namespace Spaceng
 		~Texture();
 
 		void LoadfromglTfImage(tinygltf::Image& gltfimage, std::string path, VkDevice* device, VkPhysicalDevice* PhysicalDevice, VkQueue copyQueue);
-
+		void LoadfromOpenCVBuffer();
 		void loadFromFile(std::string filename, VkFormat format, VkDevice* Device, VkPhysicalDevice* PhysicalDevice, VkCommandPool pool, VkQueue copyQueue,
 			VkImageUsageFlags imageUsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT,
-			VkImageLayout ImageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL , bool linear = false);
+			VkImageLayout ImageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL , bool linear = false , bool EnabledMip = false);
 
 		void Destroy(VkDevice* Device);
 
 	private:
 		VkImage image = VK_NULL_HANDLE;
-		VkImageLayout imageLayout;
 		VkDeviceMemory imagedeviceMemory = VK_NULL_HANDLE;
 		VkImageView view = VK_NULL_HANDLE;
 		uint32_t width = 0, height = 0;
 		uint32_t mipLevels = 0;
-		uint32_t layerCount = 0;
 		VkSampler sampler = VK_NULL_HANDLE;
 		VkDescriptorImageInfo TextureDescriptor;
 	};
@@ -60,11 +58,18 @@ namespace Spaceng
 		Model();
 		~Model();
 		void LoadFromFile(VkDevice* Device, VkPhysicalDevice* PhysicalDevice, std::string filename);
-		void DrawVerticesAndIndices();
+		void Draw(VkCommandBuffer cmd);
+		void generateQuad(VkDevice* Device, VkPhysicalDevice* PhysicalDevice); //for custom purposes
 
+		
 	private:
-		Texture texture;
-
+		Buffer VertexBuffer;
+		Buffer IndexBuffer;
+		uint32_t indexCount;
+		VkPipelineVertexInputStateCreateInfo inputState;
+		std::vector<VkVertexInputBindingDescription> bindingDescriptions;
+		std::vector<VkVertexInputAttributeDescription> attributeDescriptions;
+		enum BIND { Vertex_Binding_Index = 0 };
 	};
 
 
@@ -84,11 +89,13 @@ namespace Spaceng
 
 		Buffer UniformBuffer;
 		Model AssetModel;
+		Texture AssetTexture;
 		
 
 		VkDescriptorSetLayout DescriptorSetLayout = VK_NULL_HANDLE;
 		VkDescriptorPool DescriptorPool = VK_NULL_HANDLE;
 		VkDescriptorSet DescriptorSet = VK_NULL_HANDLE;
+		std::vector<VkWriteDescriptorSet> writeDescriptorSets;
 
 		VkPipelineLayout PipelineLayout = VK_NULL_HANDLE;
 		VkPipeline Pipeline = VK_NULL_HANDLE;
@@ -97,7 +104,6 @@ namespace Spaceng
 
 		std::string VertexShaderFile ;
 		std::string FragmentShaderFile ;
-		std::string AssetFile;
 
 		struct UBMatrix {
 			glm::mat4 projection;

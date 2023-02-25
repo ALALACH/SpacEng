@@ -7,11 +7,13 @@
 namespace Spaceng
 {
 
-	VkResult VulkanBufferMemory::AllocateBufferMemory( Buffer& Buffer, VkBufferUsageFlags usageflags, VkMemoryPropertyFlags MemoryPropertyflags, VkDevice Device,
-		VkPhysicalDeviceMemoryProperties DeviceMemoryProperties, bool descriptorAccess, bool mapAccess , void* data)
+	VkResult VulkanBufferMemory::ConstructBuffer( Buffer& Buffer,VkDeviceSize size, VkBufferUsageFlags usageflags, VkMemoryPropertyFlags MemoryPropertyflags, VkDevice Device,
+		VkPhysicalDevice* PhysicalDevice, bool descriptorAccess, bool mapAccess , void* data)
 	{
 		Buffer.usageflags = usageflags;
 		Buffer.MemoryPropertyflags = MemoryPropertyflags;
+		Buffer.mapaccess = mapAccess;
+		Buffer.size = size;
 
 		VkBufferCreateInfo BufferCI{};
 		BufferCI.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -27,7 +29,9 @@ namespace Spaceng
 		VkMemoryAllocateInfo memAlloc{};
 		memAlloc.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 		memAlloc.allocationSize = memReq.size;
-		memAlloc.memoryTypeIndex = getMemoryType(DeviceMemoryProperties, Buffer.MemoryPropertyflags, memReq, memTypeFound);
+		VkPhysicalDeviceMemoryProperties deviceMemoryProperties;
+		vkGetPhysicalDeviceMemoryProperties(*PhysicalDevice, &deviceMemoryProperties);
+		memAlloc.memoryTypeIndex = getMemoryType(deviceMemoryProperties, Buffer.MemoryPropertyflags, memReq, memTypeFound);
 
 		VkMemoryAllocateFlagsInfoKHR allocFlagsInfo{};
 		if (Buffer.usageflags & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT) 
@@ -56,6 +60,7 @@ namespace Spaceng
 				VK_CHECK_RESULT(vkFlushMappedMemoryRanges(Device, 1, &mappedRange));
 			}
 			vkUnmapMemory(Device, Buffer.memory);
+			Buffer.mapped = nullptr;
 		}
 		if (!data && mapAccess) //UniformBuffers Updates Specefic 
 		{
@@ -74,10 +79,11 @@ namespace Spaceng
 	}
 
 
-	void VulkanBufferMemory::DeallocateBufferMemory(VkDevice* Device, VkBuffer* buffer, VkDeviceMemory* memory)
+	void VulkanBufferMemory::DeallocateBufferMemory(VkDevice* Device, Buffer* buffer)
 	{
-		vkDestroyBuffer(*Device, *buffer, nullptr);
-		vkFreeMemory(*Device, *memory, nullptr);
+		if (buffer->mapaccess)
+			vkUnmapMemory(*Device, buffer->memory);
+		vkFreeMemory(*Device, buffer->memory, nullptr);
 		//VK_SPEC : If a memory object is mapped at the time it is freed, it is implicitly unmapped.
 	}
 

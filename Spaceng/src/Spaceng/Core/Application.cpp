@@ -18,7 +18,7 @@ namespace Spaceng {
 		m_Renderer = new VulkanRenderer();
 		m_Renderer->InitRenderer(
 			EnabledInstanceextensions, enabledDeviceExtensions, enabledDeviceFeatures);
-		m_AppWindow->InitWindow(m_Renderer);
+		m_AppWindow->InitWindow(m_Renderer); //initial Surface
 		
 
 
@@ -127,9 +127,9 @@ namespace Spaceng {
 	bool Application::OnWindowResize(WindowResizeEvent& e)
 	{
 		//todo : Resize viewport & ImGui Pannels
-		uint32_t width = e.GetWidth();
+		uint32_t width = e.GetWidth(); //Assuming 1 Display per Window
 		uint32_t height = e.GetHeight();
-		m_Renderer->Refresh(&width,&height, m_AppWindow->GetVsync() , &m_Assets);
+		m_Renderer->GenerateDisplay(&width,&height, m_AppWindow->GetVsync() , &m_Assets);
 		return true;
 	}
 	bool Application::OnKeyPressed(KeyPressedEvent& e)

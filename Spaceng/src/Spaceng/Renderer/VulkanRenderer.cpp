@@ -375,7 +375,7 @@ namespace Spaceng
 	}
 
 
-	void VulkanRenderer::CreateSurfacePrimitives(GLFWwindow* Window)
+	void VulkanRenderer::CreateDisplayPrimitives(GLFWwindow* Window)
 	{
 		//Init Surface
 		glfwCreateWindowSurface(Instance, Window, nullptr, &Surface);
@@ -525,7 +525,7 @@ namespace Spaceng
 	}
 
 
-	void VulkanRenderer::CreateSwapChain(uint32_t *width, uint32_t *height, bool vsync)
+	void VulkanRenderer::CreateDisplayTemplate(uint32_t *width, uint32_t *height, bool vsync)
 	{
 		VkSwapchainKHR OldSwapChain = Swapchain;
 
@@ -738,9 +738,9 @@ namespace Spaceng
 
 	void VulkanRenderer::prepareUniformBuffer(VkGLTFAsset* Asset,bool mapAccess, bool descriptorAcess)
 	{
-		VulkanBufferMemory::AllocateBufferMemory(Asset->UniformBuffer, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+		VulkanBufferMemory::ConstructBuffer(Asset->UniformBuffer,sizeof(Asset->UBOMatrices),VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-			Device, deviceMemoryProperties, descriptorAcess, mapAccess, nullptr);
+			Device, &PhysicalDevice, descriptorAcess, mapAccess, &Asset->UBOMatrices);
 		updateUniformBuffer(Asset);
 	}
 
@@ -748,73 +748,78 @@ namespace Spaceng
 	void VulkanRenderer::updateUniformBuffer(VkGLTFAsset* Asset)
 	{
 		//writes to memory block not needed so no VK_MEMORY_PROPERTY_HOST_COHERENT_BIT 
+		//todo : Apply changes to UBOmatrices (view / scale / projection /Camera Position)
 		memcpy(Asset->UniformBuffer.mapped, &Asset->UBOMatrices, sizeof(Asset->UBOMatrices));
 	}
 
 
-	void VulkanRenderer::prepareDescriptorSet(VkGLTFAsset* Asset)
+	void VulkanRenderer::prepareDescriptors(VkGLTFAsset* Asset)
 	{
-		uint32_t type = Asset->getType();
-		if (type == model_type)
-		{
-			//descriptorSet Layout
-			std::vector<VkDescriptorSetLayoutBinding> LayoutBindings {};
-			
-			VkDescriptorSetLayoutBinding Binding1{};
-			Binding1.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			Binding1.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-			Binding1.binding = 0;
-			Binding1.descriptorCount = 1;
+		//descriptorSet Layout
+		std::vector<VkDescriptorSetLayoutBinding> LayoutBindings {};
+		
+		VkDescriptorSetLayoutBinding Binding1{};
+		Binding1.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		Binding1.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+		Binding1.binding = 0;
+		Binding1.descriptorCount = 1;
 
-			VkDescriptorSetLayoutBinding Binding2{};
-			Binding2.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			Binding2.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-			Binding2.binding = 1;
-			Binding2.descriptorCount = 1;
+		VkDescriptorSetLayoutBinding Binding2{};
+		Binding2.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		Binding2.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		Binding2.binding = 1;
+		Binding2.descriptorCount = 1;
 
-			LayoutBindings.push_back(Binding1);
-			LayoutBindings.push_back(Binding2);
+		LayoutBindings.push_back(Binding1);
+		LayoutBindings.push_back(Binding2);
 
-			VkDescriptorSetLayoutCreateInfo descriptorLayoutCI = {};
-			descriptorLayoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-			descriptorLayoutCI.pBindings = LayoutBindings.data();
-			descriptorLayoutCI.bindingCount = 2;
-			VK_CHECK_RESULT(vkCreateDescriptorSetLayout(Device, &descriptorLayoutCI, nullptr, &Asset->DescriptorSetLayout));
+		VkDescriptorSetLayoutCreateInfo descriptorLayoutCI = {};
+		descriptorLayoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+		descriptorLayoutCI.pBindings = LayoutBindings.data();
+		descriptorLayoutCI.bindingCount = 2;
+		VK_CHECK_RESULT(vkCreateDescriptorSetLayout(Device, &descriptorLayoutCI, nullptr, &Asset->DescriptorSetLayout));
 
-			//descriptor Pool
-			std::vector<VkDescriptorPoolSize> DescriptorPoolSizes = {};
+		//descriptor Pool
+		std::vector<VkDescriptorPoolSize> DescriptorPoolSizes = {};
 
-			VkDescriptorPoolSize PoolSize1 {};
-			PoolSize1.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			PoolSize1.descriptorCount = 1;
+		VkDescriptorPoolSize PoolSize1 {};
+		PoolSize1.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		PoolSize1.descriptorCount = 1;
 
-			VkDescriptorPoolSize PoolSize2 {};
-			PoolSize2.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			PoolSize2.descriptorCount = 1;
+		VkDescriptorPoolSize PoolSize2 {};
+		PoolSize2.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		PoolSize2.descriptorCount = 1;
 
-			DescriptorPoolSizes.push_back(PoolSize1);
-			DescriptorPoolSizes.push_back(PoolSize2);
+		DescriptorPoolSizes.push_back(PoolSize1);
+		DescriptorPoolSizes.push_back(PoolSize2);
 
-			VkDescriptorPoolCreateInfo DescriptorpoolCI {};
-			DescriptorpoolCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-			DescriptorpoolCI.poolSizeCount = 2;
-			DescriptorpoolCI.maxSets = 1;
-			DescriptorpoolCI.pPoolSizes = DescriptorPoolSizes.data();
+		VkDescriptorPoolCreateInfo DescriptorpoolCI {};
+		DescriptorpoolCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+		DescriptorpoolCI.poolSizeCount = 2;
+		DescriptorpoolCI.maxSets = 1;
+		DescriptorpoolCI.pPoolSizes = DescriptorPoolSizes.data();
 
-			VK_CHECK_RESULT(vkCreateDescriptorPool(Device, &DescriptorpoolCI, nullptr, &Asset->DescriptorPool));
+		VK_CHECK_RESULT(vkCreateDescriptorPool(Device, &DescriptorpoolCI, nullptr, &Asset->DescriptorPool));
 
-			//DescriptorSet (Alloc / Update)
-			VkDescriptorSetAllocateInfo DescriptorAllocateInfo {};
-			DescriptorAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-			DescriptorAllocateInfo.descriptorPool = Asset->DescriptorPool;
-			DescriptorAllocateInfo.pSetLayouts = &Asset->DescriptorSetLayout;
-			DescriptorAllocateInfo.descriptorSetCount = 1;
+		//DescriptorSet (Alloc / Update)
+		VkDescriptorSetAllocateInfo DescriptorAllocateInfo {};
+		DescriptorAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+		DescriptorAllocateInfo.descriptorPool = Asset->DescriptorPool;
+		DescriptorAllocateInfo.pSetLayouts = &Asset->DescriptorSetLayout;
+		DescriptorAllocateInfo.descriptorSetCount = 1;
 
-			VK_CHECK_RESULT(vkAllocateDescriptorSets(Device, &DescriptorAllocateInfo, &Asset->DescriptorSet));
+		VK_CHECK_RESULT(vkAllocateDescriptorSets(Device, &DescriptorAllocateInfo, &Asset->DescriptorSet));
 
+		Asset->writeDescriptorSets.reserve(2);
+		UpdateDescriptorSet(Asset);
+	}
+	void VulkanRenderer::UpdateDescriptorSet(VkGLTFAsset* Asset , bool updateUniform , bool updateTexture)
+	{
+		//check vkCmdPushDescriptorSetKHR for faster behaviour
+		//      vkCmdPushConstants
 
-			std::vector<VkWriteDescriptorSet> writeDescriptorSets;
-
+		if (updateUniform)
+		{ 
 			VkWriteDescriptorSet writeDescriptorSet1{};
 			writeDescriptorSet1.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			writeDescriptorSet1.dstSet = Asset->DescriptorSet;
@@ -822,20 +827,20 @@ namespace Spaceng
 			writeDescriptorSet1.dstBinding = 0;
 			writeDescriptorSet1.pBufferInfo = &Asset->UniformBuffer.BufferDescriptor;
 			writeDescriptorSet1.descriptorCount = 1;
-
+			Asset->writeDescriptorSets[0] = writeDescriptorSet1;
+		}
+		if (updateTexture)
+		{ 
 			VkWriteDescriptorSet writeDescriptorSet2{};
 			writeDescriptorSet2.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			writeDescriptorSet2.dstSet = Asset->DescriptorSet;
 			writeDescriptorSet2.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 			writeDescriptorSet2.dstBinding = 1;
-			writeDescriptorSet2.pImageInfo = &Asset->AssetModel.texture.TextureDescriptor; //update once implemented and allocate memory for the texture object
+			writeDescriptorSet2.pImageInfo = &Asset->AssetTexture.TextureDescriptor;  // Video-Frames Refreshing by re-writing the texture descriptor
 			writeDescriptorSet2.descriptorCount = 1;
-
-			writeDescriptorSets.push_back(writeDescriptorSet1);
-			writeDescriptorSets.push_back(writeDescriptorSet2);
-
-			//vkUpdateDescriptorSets(Device, writeDescriptorSets.size(), writeDescriptorSets.data(), 0, NULL);
+			Asset->writeDescriptorSets[1]= writeDescriptorSet2;
 		}
+		vkUpdateDescriptorSets(Device, Asset->writeDescriptorSets.size(), Asset->writeDescriptorSets.data(), 0, NULL);
 	}
 
 	void VulkanRenderer::preparePipeline(VkGLTFAsset* Asset)
@@ -863,7 +868,7 @@ namespace Spaceng
 		RasterizationStateCI.flags = 0;
 		RasterizationStateCI.depthClampEnable = VK_FALSE;
 		RasterizationStateCI.lineWidth = 1.0f;
-
+		
 		//MultisampleState
 		VkPipelineMultisampleStateCreateInfo MultiSampleCI {};
 		MultiSampleCI.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
@@ -907,10 +912,7 @@ namespace Spaceng
 		shaderStages[0] = LoadShader(Asset->VertexShaderFile, VK_SHADER_STAGE_VERTEX_BIT);
 		shaderStages[1] = LoadShader(Asset->FragmentShaderFile, VK_SHADER_STAGE_FRAGMENT_BIT);
 
-		//VertexInputState                        
-		VkPipelineVertexInputStateCreateInfo VertexInputState {};
-		VertexInputState.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-		// to do : (empty) to be implemented for further use
+
 
 
 
@@ -932,7 +934,7 @@ namespace Spaceng
 		PipelineCI.pDynamicState = &DynamicStateCI;
 		PipelineCI.stageCount = static_cast<uint32_t>(shaderStages.size());
 		PipelineCI.pStages = shaderStages.data();
-		PipelineCI.pVertexInputState = &VertexInputState;
+		PipelineCI.pVertexInputState = &Asset->AssetModel.inputState;
 
 		VK_CHECK_RESULT(vkCreateGraphicsPipelines(Device, PipelineCache, 1, &PipelineCI, nullptr, &Asset->Pipeline));
 	}
@@ -940,27 +942,45 @@ namespace Spaceng
 
 	void VulkanRenderer::PrepareAsset(VkGLTFAsset* Asset, AssetType Type , std::string filepath)
 	{
-		Asset->AssetModel.LoadFromFile(&Device, &PhysicalDevice ,filepath);
+		if (Type == model_type)
+		{
+			std::string Modelfilepath = filepath + "\\assets\\Models\\" + Asset->getName() + ".gltf"; //change format accordingly
+			Asset->AssetModel.LoadFromFile(&Device, &PhysicalDevice , Modelfilepath);
+		}
+		else if (Type == texture_On_Screen)
+		{
+			Asset->AssetModel.generateQuad(&Device, &PhysicalDevice);
+			std::string Texturefilepath = filepath + "\\assets\\Textures\\" + Asset->getName() + ".jpg"; //change format accordingly
+			Asset->AssetTexture.loadFromFile(Texturefilepath, VK_FORMAT_R8G8B8A8_UNORM, &Device, &PhysicalDevice, Commandpool, Queue);
+		}
 		prepareUniformBuffer(Asset);
-		prepareDescriptorSet(Asset);
+		prepareDescriptors(Asset);
 		preparePipeline(Asset);
 	}
 
 	void VulkanRenderer::CleanUpAsset(VkGLTFAsset* Asset)
 	{
-		cleanUpBuffer(&Device, &Asset->UniformBuffer.buffer, &Asset->UniformBuffer.memory); //UB
-		vkDestroyDescriptorPool(Device, Asset->DescriptorPool, nullptr); // Destroys Set
+		cleanUpBuffer(&Device, &Asset->UniformBuffer); //UB
+		Asset->writeDescriptorSets.clear();
+		vkFreeDescriptorSets(Device, Asset->DescriptorPool, 1, &Asset->DescriptorSet);
+		vkDestroyDescriptorPool(Device, Asset->DescriptorPool, nullptr);
 		vkDestroyPipeline(Device, Asset->Pipeline, nullptr);
 		vkDestroyPipelineLayout(Device, Asset->PipelineLayout, nullptr);
 		vkDestroyDescriptorSetLayout(Device, Asset->DescriptorSetLayout, nullptr);
-		
-		//todo : clean up model / texture variables
+		Asset->AssetTexture.Destroy(&Device);  //debatable because of the so many textures
+		cleanUpBuffer(&Device, &Asset->AssetModel.VertexBuffer);
+		cleanUpBuffer(&Device, &Asset->AssetModel.IndexBuffer);
+
+
+		//todo : clean up model / texture variables ... ongoing process
 	}
 
 
-	void VulkanRenderer::cleanUpBuffer(VkDevice* Device, VkBuffer* buffer, VkDeviceMemory* memory)
+	void VulkanRenderer::cleanUpBuffer(VkDevice* Device, Buffer* buffer)
 	{
-		VulkanBufferMemory::DeallocateBufferMemory(Device, buffer, memory);
+		vkDestroyBuffer(*Device, buffer->buffer, nullptr);
+		VulkanBufferMemory::DeallocateBufferMemory(Device, buffer);
+		buffer->buffer = VK_NULL_HANDLE;
 	}
 
 
@@ -999,10 +1019,10 @@ namespace Spaceng
 	}
 
 
-	void VulkanRenderer::Refresh(uint32_t* width, uint32_t* height, bool vsync, std::vector<VkGLTFAsset*>* Assets)
+	void VulkanRenderer::GenerateDisplay(uint32_t* width, uint32_t* height, bool vsync, std::vector<VkGLTFAsset*>* Assets)
 	{
 		vkDeviceWaitIdle(Device);
-		CreateSwapChain(width, height, vsync);
+		CreateDisplayTemplate(width, height, vsync);
 		//todo: GUI Aspectratio
 		RecordCommandBuffers(Assets);
 		vkDeviceWaitIdle(Device);
@@ -1054,7 +1074,8 @@ namespace Spaceng
 			{
 				vkCmdBindDescriptorSets(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, (*Assets)[j]->PipelineLayout, 0, 1, &(*Assets)[j]->DescriptorSet, 0, NULL);
 				vkCmdBindPipeline(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, (*Assets)[j]->Pipeline);
-				(*Assets)[j]->AssetModel.DrawVerticesAndIndices(); //to do : to be implemented
+
+				(*Assets)[j]->AssetModel.Draw(CommandBuffers[i]); //to do : to be implemented ...ongoing process
 			}
 			//todo: implement UI Command Recorder
 
@@ -1063,7 +1084,7 @@ namespace Spaceng
 			VK_CHECK_RESULT(vkEndCommandBuffer(CommandBuffers[i]));
 		}
 	}
-	void VulkanRenderer::render(std::vector<VkGLTFAsset*>* Assets)
+	void VulkanRenderer::render (std::vector<VkGLTFAsset*>* Assets)
 	{
 		Submitinfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 		Submitinfo.pWaitDstStageMask = &submitPipelineStages;
@@ -1080,12 +1101,14 @@ namespace Spaceng
 		if ((result == VK_ERROR_OUT_OF_DATE_KHR) || (result == VK_SUBOPTIMAL_KHR)) 
 		// Check the Swapchain and Surface Compatability
 		{
-			if (result == VK_ERROR_OUT_OF_DATE_KHR){
-			Refresh( &SurfaceWidth, &SurfaceHeight, SurfaceVsync, Assets);
+			if (result == VK_ERROR_OUT_OF_DATE_KHR)
+			{
+				GenerateDisplay( &SurfaceWidth, &SurfaceHeight, SurfaceVsync, Assets);
 			}
 			return;
 		}
-		else {
+		else 
+		{
 			VK_CHECK_RESULT(result);
 		}
 		// Use a fence to wait until the Queue's command buffer has finished execution before using it again
@@ -1114,13 +1137,17 @@ namespace Spaceng
 			presentInfo.waitSemaphoreCount = 1;
 		}
 		result = fpQueuePresentKHR(Queue, &presentInfo);
-		if ((result == VK_ERROR_OUT_OF_DATE_KHR) || (result == VK_SUBOPTIMAL_KHR)) {
-			Refresh(&SurfaceWidth, &SurfaceHeight, SurfaceVsync, Assets);
-			if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+		if ((result == VK_ERROR_OUT_OF_DATE_KHR) || (result == VK_SUBOPTIMAL_KHR))
+		{
+			GenerateDisplay(&SurfaceWidth, &SurfaceHeight, SurfaceVsync, Assets);
+
+			if (result == VK_ERROR_OUT_OF_DATE_KHR)
+			{
 				return;
 			}
 		}
-		else {
+		else 
+		{
 			VK_CHECK_RESULT(result);
 		}
 		VK_CHECK_RESULT(vkQueueWaitIdle(Queue));

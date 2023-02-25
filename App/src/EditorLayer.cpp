@@ -20,14 +20,9 @@ namespace Spaceng
 
 	void EditorLayer::OnAttach()
 	{
-		std::string Dir= Application::Get().getProjectDirectory();
-
-		LoadAsset("triangle", model_type, Dir, true);
-		LoadAsset("triangle", model_type, Dir, true);
-		LoadAsset("triangle", model_type, Dir, true);
-		LoadAsset("triangle", model_type, Dir, true);
-		LoadAsset("triangle", model_type, Dir, true);
-	
+		std::string AssetDirectoryPath= Application::Get().getProjectDirectory();
+		//Path for textures/Models/Shaders usw..
+		LoadAsset("Screen", texture_On_Screen, AssetDirectoryPath, true);
 
 	}
 

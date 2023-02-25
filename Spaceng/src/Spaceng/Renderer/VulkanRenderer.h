@@ -31,12 +31,13 @@ namespace Spaceng
 
 
 
-		void CreateSurfacePrimitives(GLFWwindow* Window);
-		void CreateSwapChain(uint32_t* width, uint32_t* height, bool vsync);
+		void CreateDisplayPrimitives(GLFWwindow* Window);
+		void CreateDisplayTemplate(uint32_t* width, uint32_t* height, bool vsync);
 
 		void prepareUniformBuffer(VkGLTFAsset* Asset, bool mapAccess = true, bool descriptorAcess = true);
 		void updateUniformBuffer(VkGLTFAsset* Asset);
-		void prepareDescriptorSet(VkGLTFAsset* Asset);
+		void prepareDescriptors(VkGLTFAsset* Asset);
+		void UpdateDescriptorSet(VkGLTFAsset* Asset , bool updateUniform = true , bool updateTexture = true);
 		void preparePipeline(VkGLTFAsset* Asset);
 
 
@@ -45,15 +46,15 @@ namespace Spaceng
 		void CleanUpAsset(VkGLTFAsset* Asset);
 
 
-		void Refresh(uint32_t* width, uint32_t* height, bool vsync, std::vector<VkGLTFAsset*>* Assets);
+		void GenerateDisplay(uint32_t* width, uint32_t* height, bool vsync, std::vector<VkGLTFAsset*>* Assets);
 		void RecordCommandBuffers(std::vector<VkGLTFAsset*>* Assets);
-		void render(std::vector<VkGLTFAsset*>* Assets);
+		void render (std::vector<VkGLTFAsset*>* Assets);
 
 
 
 
 		//helpers
-		void cleanUpBuffer(VkDevice* Device, VkBuffer* buffer, VkDeviceMemory* memory);
+		void cleanUpBuffer(VkDevice* Device, Buffer* buffer);
 		VkPipelineShaderStageCreateInfo LoadShader(std::string Filename, VkShaderStageFlagBits Stage);
 		uint32_t getQueueFamilyIndex(VkQueueFlags queueFlags) const;
 		inline VkDevice GetDevice() { return Device; }
@@ -153,6 +154,7 @@ namespace Spaceng
 		 PFN_vkGetSwapchainImagesKHR fpGetSwapchainImagesKHR = VK_NULL_HANDLE;
 		 PFN_vkAcquireNextImageKHR fpAcquireNextImageKHR = VK_NULL_HANDLE;
 		 PFN_vkQueuePresentKHR fpQueuePresentKHR = VK_NULL_HANDLE;
+		
 	};
 
 

@@ -27,18 +27,18 @@ namespace Spaceng
 	VkGLTFAsset::VkGLTFAsset(std::string name ,AssetType type, bool DepthStencil, std::string filepath)
 	{
 
-		UniformBuffer.size = sizeof(UBOMatrices);
 		Name = name;
 		Type = type;
+		if (DepthStencil) { DepthStencilEnabled = true; }
+		UniformBuffer.size = sizeof(UBOMatrices);
 		VertexShaderFile =filepath + "\\assets\\Shaders\\" + name + ".vert.spv"; 
 		FragmentShaderFile =filepath + "\\assets\\Shaders\\" + name + ".frag.spv";
-		if (DepthStencil) { DepthStencilEnabled = true; }
+		
 	}
 
 
 	VkGLTFAsset::~VkGLTFAsset() 
 	{
-
 	}
 
 
@@ -46,28 +46,105 @@ namespace Spaceng
 	{
 		tinygltf::Model model;
 	}
-	 
-	void Model::DrawVerticesAndIndices()
-	{
 
+	void Model::generateQuad(VkDevice* Device, VkPhysicalDevice* PhysicalDevice)
+	{
+		struct Vertex {
+			float pos[3];
+			float uv[2];
+			float normal[3];
+		};
+		// Setup vertices for a single uv-mapped quad made from two triangles
+		std::vector<Vertex> vertices =
+		{
+			{ {  1.0f,  1.0f, 0.0f }, { 1.0f, 1.0f },{ 0.0f, 0.0f, 1.0f } },
+			{ { -1.0f,  1.0f, 0.0f }, { 0.0f, 1.0f },{ 0.0f, 0.0f, 1.0f } },
+			{ { -1.0f, -1.0f, 0.0f }, { 0.0f, 0.0f },{ 0.0f, 0.0f, 1.0f } },
+			{ {  1.0f, -1.0f, 0.0f }, { 1.0f, 0.0f },{ 0.0f, 0.0f, 1.0f } }
+		};
+
+		// Setup indices
+		std::vector<uint32_t> indices = { 0,1,2, 2,3,0 };
+		indexCount = static_cast<uint32_t>(indices.size());
+
+		VulkanBufferMemory::ConstructBuffer(VertexBuffer, sizeof(Vertex) * vertices.size(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+			, *Device, PhysicalDevice, true, false, vertices.data());
+
+		VulkanBufferMemory::ConstructBuffer(IndexBuffer, sizeof(uint32_t) * indices.size(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+			, *Device, PhysicalDevice, true, false, indices.data());
+		
+
+		//Binding
+		bindingDescriptions.resize(1);
+		bindingDescriptions[0].binding = Vertex_Binding_Index;
+		bindingDescriptions[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+		bindingDescriptions[0].stride = sizeof(Vertex);
+
+		//Atributes
+		// 
+		//pos
+		attributeDescriptions.resize(3);
+		attributeDescriptions[0].binding = Vertex_Binding_Index;
+		attributeDescriptions[0].location = 0;
+		attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+		attributeDescriptions[0].offset = offsetof(Vertex, pos);
+
+		//uv 
+		attributeDescriptions[0].binding = Vertex_Binding_Index;
+		attributeDescriptions[0].location = 1;
+		attributeDescriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
+		attributeDescriptions[0].offset = offsetof(Vertex, uv);
+
+		//normal
+		attributeDescriptions[0].binding = Vertex_Binding_Index;
+		attributeDescriptions[0].location = 2;
+		attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+		attributeDescriptions[0].offset = offsetof(Vertex, normal);
+
+		//inputstate
+		inputState.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+		inputState.vertexBindingDescriptionCount = static_cast<uint32_t>(bindingDescriptions.size());
+		inputState.pVertexBindingDescriptions = bindingDescriptions.data();
+		inputState.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
+		inputState.pVertexAttributeDescriptions = attributeDescriptions.data();
+	}
+	void Model::Draw(VkCommandBuffer cmd)
+	{
+		
+			VkDeviceSize offsets[1] = { 0 };
+			vkCmdBindVertexBuffers(cmd, Vertex_Binding_Index, 1, &VertexBuffer.buffer, offsets);
+			vkCmdBindIndexBuffer(cmd, IndexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+
+			vkCmdDrawIndexed(cmd, indexCount, 1, 0, 0, 0);
+		
 	}
 
 
 	//Texture
 	
 	void Texture::loadFromFile(std::string filename, VkFormat format, VkDevice* Device,VkPhysicalDevice* PhysicalDevice, VkCommandPool pool, VkQueue copyQueue,
-		VkImageUsageFlags imageUsageFlags, VkImageLayout ImageLayout, bool linear)
+		VkImageUsageFlags imageUsageFlags, VkImageLayout ImageLayout, bool linear,bool EnabledMip)
 	{
 
 		int stb_width, stb_height, stb_channels;
 		void* ImgData =stbi_load(filename.c_str(), &stb_width, &stb_height, &stb_channels, 4);
-		uint32_t ImgSize = stb_width * stb_height * 4;
 		SE_ASSERT(!ImgData, "Could not load File");
+		uint32_t ImgSize = stb_width * stb_height * 4;
 		
 
 		width = stb_width;
 		height = stb_height;
-		mipLevels = (uint32_t)std::floor(std::log2(glm::min(stb_width, stb_height))) + 1;
+
+		if (EnabledMip)
+		{
+			mipLevels = (uint32_t)std::floor(std::log2(glm::min(stb_width, stb_height))) + 1;
+		}
+		else
+		{
+			mipLevels = 1;
+		}
 
 	
 
@@ -87,18 +164,18 @@ namespace Spaceng
 		cmdBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		VK_CHECK_RESULT(vkBeginCommandBuffer(CopyCmd, &cmdBufferBeginInfo));
 
-		if (!linear) 
 		//Optimal Image Creation
 		//Linear Implementation Added but obscured
+		if (!linear) 
 		{
-			//memory
+			//Staging Buffer Memory allocation
 			VkMemoryRequirements memReqs;
 			VkDeviceMemory memory;
 			VkBuffer stagingbuffer;
 
 			VkBufferCreateInfo BufferCI{};
 			BufferCI.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-			BufferCI.size = ImgSize;
+			BufferCI.size = ImgSize;  // Image Bites Size
 			BufferCI.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 			BufferCI.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 			VK_CHECK_RESULT(vkCreateBuffer(*Device, &BufferCI, nullptr, &stagingbuffer));
@@ -112,15 +189,15 @@ namespace Spaceng
 			memAllocInfo.memoryTypeIndex = VulkanBufferMemory::getMemoryType(deviceMemoryProperties, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, memReqs);
 			VK_CHECK_RESULT(vkAllocateMemory(*Device, &memAllocInfo, nullptr, &memory));
 			VK_CHECK_RESULT(vkBindBufferMemory(*Device, stagingbuffer, memory, 0));
-
+#if HostAccess
 			//Host-Access
 			void* data;
 			VK_CHECK_RESULT(vkMapMemory(*Device, memory, 0, memReqs.size, 0, &data));
-			memcpy(data, ImgData, memReqs.size);
+		    memcpy(data, ImgData, ImgSize);      // needed for buffer copying or transfer purposes inside the Application
 			vkUnmapMemory(*Device, memory);
+#endif
 
-
-			// Setup buffer copy regions for each mip level
+			// Setup buffer copy regions for each mip level and miplvl 0 [Full Resolution]
 			std::vector<VkBufferImageCopy> bufferCopyRegions;
 
 			for (uint32_t i = 0; i < mipLevels; i++)
@@ -157,6 +234,7 @@ namespace Spaceng
 			}
 			VK_CHECK_RESULT(vkCreateImage(*Device, &ImageCI, nullptr, &image));
 
+			// Image Memory Allocation
 			vkGetImageMemoryRequirements(*Device,image, &memReqs);
 
 			memAllocInfo.allocationSize = memReqs.size;
@@ -166,7 +244,7 @@ namespace Spaceng
 			VK_CHECK_RESULT(vkBindImageMemory(*Device, image, imagedeviceMemory, 0));
 
 			{
-				// Copy Layout
+				// Layout undefined to Transfer
 				VkImageSubresourceRange subresourceRange = {};
 				subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 				subresourceRange.baseMipLevel = 0;
@@ -183,8 +261,7 @@ namespace Spaceng
 				imageMemoryBarrier.image = image;
 				imageMemoryBarrier.subresourceRange = subresourceRange;
 
-				// Source pipeline stage is host write/read exection (VK_PIPELINE_STAGE_HOST_BIT)
-				// Destination pipeline stage is copy command exection (VK_PIPELINE_STAGE_TRANSFER_BIT)
+		
 				vkCmdPipelineBarrier(
 					CopyCmd,
 					VK_PIPELINE_STAGE_HOST_BIT,
@@ -195,12 +272,12 @@ namespace Spaceng
 					1, &imageMemoryBarrier);
 			}
 
+			// Buffer TO Image (all Miplevels Regions)
 			vkCmdCopyBufferToImage(CopyCmd, stagingbuffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 
 				static_cast<uint32_t>(bufferCopyRegions.size()), bufferCopyRegions.data());
 
 			{
-				// Shader Layout
-				imageLayout = ImageLayout;
+				// layout Transfer to Shader Read
 				VkImageSubresourceRange subresourceRange = {};
 				subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 				subresourceRange.baseMipLevel = 0;
@@ -217,8 +294,7 @@ namespace Spaceng
 				imageMemoryBarrier.image = image;
 				imageMemoryBarrier.subresourceRange = subresourceRange;
 
-				// Source pipeline stage stage is copy command exection (VK_PIPELINE_STAGE_TRANSFER_BIT)
-				// Destination pipeline stage fragment shader access (VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT)
+		
 				vkCmdPipelineBarrier(
 					CopyCmd,
 					VK_PIPELINE_STAGE_TRANSFER_BIT,
@@ -228,9 +304,10 @@ namespace Spaceng
 					0, nullptr,
 					1, &imageMemoryBarrier);
 			}
-			
+			//CommandBuffer Recording achieved
 			VK_CHECK_RESULT(vkEndCommandBuffer(CopyCmd));
 
+			//Commandbuffer Submition to queue
 			VkSubmitInfo submitInfo{};
 			submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 			submitInfo.commandBufferCount = 1;
@@ -239,7 +316,7 @@ namespace Spaceng
 			FenceCI.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 			FenceCI.flags = 0;
 			VkFence fence;
-			VK_CHECK_RESULT(vkCreateFence(*Device, &FenceCI, nullptr, &fence));
+			VK_CHECK_RESULT(vkCreateFence(*Device, &FenceCI, nullptr, &fence)); //per image sync
 			VK_CHECK_RESULT(vkQueueSubmit(copyQueue, 1, &submitInfo, fence));
 			VK_CHECK_RESULT(vkWaitForFences(*Device, 1, &fence, VK_TRUE, UINT64_MAX));
 
@@ -416,7 +493,7 @@ namespace Spaceng
 		//texture Descriptor
 		TextureDescriptor.sampler = sampler;
 		TextureDescriptor.imageView = view;
-		TextureDescriptor.imageLayout = imageLayout;
+		TextureDescriptor.imageLayout = ImageLayout;
 
 
 		//todo : Generate Mips using VkCmdBlitImage();
@@ -435,6 +512,9 @@ namespace Spaceng
 		{
 			vkDestroySampler(*Device, sampler, nullptr);
 		}
+		TextureDescriptor.sampler = VK_NULL_HANDLE;
+		TextureDescriptor.imageView = VK_NULL_HANDLE;
+		TextureDescriptor.imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		vkFreeMemory(*Device, imagedeviceMemory, nullptr);
 	}
 
