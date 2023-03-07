@@ -14,3 +14,4 @@ bin-int/
 /App/assets/Textures/Screen.jpg
 /App/assets/Shaders/texture.frag
 /App/assets/Shaders/texture.vert
+*.jpg
