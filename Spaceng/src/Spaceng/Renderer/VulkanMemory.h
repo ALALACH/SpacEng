@@ -19,10 +19,10 @@ namespace Spaceng
 	{
 
 	public:
-		 VkResult ConstructBuffer(Buffer& Buffer, VkDeviceSize size, VkBufferUsageFlags usageflags, VkMemoryPropertyFlags MemoryPropertyflags, VkDevice Device,
+		 static VkResult ConstructBuffer(Buffer& Buffer, VkDeviceSize size, VkBufferUsageFlags usageflags, VkMemoryPropertyFlags MemoryPropertyflags, VkDevice Device,
 			VkPhysicalDevice* PhysicalDevice, bool descriptorAccess, bool mapAccess, void* data = nullptr);
 
-		 void DeallocateBufferMemory(VkDevice* Device, Buffer* buffer);
+		 static void DeallocateBufferMemory(VkDevice* Device, Buffer* buffer);
 	
 		 static uint32_t getMemoryType(VkPhysicalDeviceMemoryProperties DeviceMemProperties, VkMemoryPropertyFlags memoryPropertyFlags,
 			VkMemoryRequirements memReq, VkBool32* memTypeFound = nullptr);

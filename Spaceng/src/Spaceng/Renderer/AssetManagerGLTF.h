@@ -59,7 +59,7 @@ namespace Spaceng
 		~Model();
 		void LoadFromFile(VkDevice* Device, VkPhysicalDevice* PhysicalDevice, std::string filename);
 		void Draw(VkCommandBuffer cmd);
-		void generateQuad(VkDevice* Device, VkPhysicalDevice* PhysicalDevice, VulkanBufferMemory* MemoryHandle); //for custom purposes
+		void generateQuad(VkDevice* Device, VkPhysicalDevice* PhysicalDevice); //for custom purposes
 
 		
 	private:
@@ -92,8 +92,7 @@ namespace Spaceng
 		VkDescriptorSetLayout DescriptorSetLayout = VK_NULL_HANDLE;
 		VkDescriptorPool DescriptorPool = VK_NULL_HANDLE;
 		VkDescriptorSet DescriptorSet = VK_NULL_HANDLE;
-		VkWriteDescriptorSet WriteUniform;
-		VkWriteDescriptorSet WriteImage;
+		std::vector<VkWriteDescriptorSet> writeDescriptorSets;
 
 		VkPipelineLayout PipelineLayout = VK_NULL_HANDLE;
 		VkPipeline Pipeline = VK_NULL_HANDLE;

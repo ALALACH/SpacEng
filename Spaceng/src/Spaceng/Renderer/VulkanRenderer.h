@@ -84,8 +84,6 @@ namespace Spaceng
 
 		 //Device
 		 VkDevice Device;
-		 //memory
-		 VulkanBufferMemory* MemoryHandle;
 
 		 //Queue
 		 VkQueue Queue;

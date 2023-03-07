@@ -69,7 +69,6 @@ namespace Spaceng
 		SetupFunctionPtr();
 		CreatePipelineCache();
 		CreateSemaphores();
-		getSupportedDepth();
 		SubmitInformation();
 	}
 
@@ -621,6 +620,9 @@ namespace Spaceng
 				colorSpace = surfaceFormats[0].colorSpace;
 			}
 		}
+
+		getSupportedDepth();
+		SetupRenderPass();
 		//CommandPool : Surface Dependency
 		VkCommandPoolCreateInfo CommandPoolCI = {};
 		CommandPoolCI.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -656,8 +658,11 @@ namespace Spaceng
 		SurfaceWidth = *width;
 		SurfaceHeight = *height;
 
+		//Depth
+		vkDestroyImageView(Device, DepthStencil.view, nullptr);
+		vkDestroyImage(Device, DepthStencil.image, nullptr);
+		vkFreeMemory(Device, DepthStencil.memory, nullptr);
 		SetupDepthStencil();
-		SetupRenderPass();
 	
 		//Present Modes
 		uint32_t presentmodecount;
@@ -794,11 +799,7 @@ namespace Spaceng
 
 			VK_CHECK_RESULT(vkCreateImageView(Device, &SwapChainImageViewCI, nullptr, &SwapChainImageViewBufffer[i].imageview));
 		}
-		//Depth
-		vkDestroyImageView(Device, DepthStencil.view, nullptr);
-		vkDestroyImage(Device, DepthStencil.image, nullptr);
-		vkFreeMemory(Device, DepthStencil.memory, nullptr);
-		SetupDepthStencil();
+		
 
 		//Framebuffer
 		for (VkFramebuffer& framebuffer : FrameBuffer)
@@ -880,7 +881,7 @@ namespace Spaceng
 
 	void VulkanRenderer::prepareUniformBuffer(VkGLTFAsset* Asset,bool mapAccess, bool descriptorAcess)
 	{
-		VK_CHECK_RESULT(MemoryHandle->ConstructBuffer(Asset->UniformBuffer, sizeof(Asset->UBOMatrices), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+		VK_CHECK_RESULT(VulkanBufferMemory::ConstructBuffer(Asset->UniformBuffer, sizeof(Asset->UBOMatrices), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 			Device, &PhysicalDevice, descriptorAcess, mapAccess, &Asset->UBOMatrices));
 
@@ -973,8 +974,7 @@ namespace Spaceng
 			writeDescriptorSet1.dstBinding = 0;
 			writeDescriptorSet1.pBufferInfo = &Asset->UniformBuffer.BufferDescriptor;
 			writeDescriptorSet1.descriptorCount = 1;
-			Asset->WriteUniform = writeDescriptorSet1;
-			vkUpdateDescriptorSets(Device, 1, &Asset->WriteUniform, 0, NULL);
+			Asset->writeDescriptorSets.push_back(writeDescriptorSet1);
 		}
 		if (updateTexture)
 		{ 
@@ -985,9 +985,9 @@ namespace Spaceng
 			writeDescriptorSet2.dstBinding = 1;
 			writeDescriptorSet2.pImageInfo = &Asset->AssetTexture.TextureDescriptor;  // Video-Frames Refreshing by re-writing the texture descriptor
 			writeDescriptorSet2.descriptorCount = 1;
-			Asset->WriteImage = writeDescriptorSet2;
-			vkUpdateDescriptorSets(Device, 1, &Asset->WriteImage, 0, NULL);
+			Asset->writeDescriptorSets.push_back(writeDescriptorSet2);
 		}
+		vkUpdateDescriptorSets(Device, Asset->writeDescriptorSets.size(), Asset->writeDescriptorSets.data(), 0, NULL);
 	}
 
 	void VulkanRenderer::preparePipeline(VkGLTFAsset* Asset)
@@ -1154,9 +1154,9 @@ namespace Spaceng
 		}
 		else if (Type == texture_On_Screen)
 		{
-			std::string Texturefilepath = filepath + "\\assets\\Textures\\" + Asset->getName() + ".jpg"; //change format accordingly
-			Asset->AssetTexture.loadFromFile(Texturefilepath, VK_FORMAT_B8G8R8A8_UNORM, &Device, &PhysicalDevice, Commandpool, Queue);
-			Asset->AssetModel.generateQuad(&Device, &PhysicalDevice,MemoryHandle);
+			std::string Texturefilepath = filepath + "\\assets\\Textures\\" + Asset->getName() + ".png"; //change format accordingly
+			Asset->AssetTexture.loadFromFile(Texturefilepath, VK_FORMAT_R8G8B8A8_UNORM, &Device, &PhysicalDevice, Commandpool, Queue);
+			Asset->AssetModel.generateQuad(&Device, &PhysicalDevice);
 			prepareUniformBuffer(Asset,true);
 			prepareDescriptors(Asset);
 			preparePipeline(Asset);
@@ -1166,7 +1166,7 @@ namespace Spaceng
 	void VulkanRenderer::CleanUpAsset(VkGLTFAsset* Asset)
 	{
 		cleanUpBuffer(&Device, &Asset->UniformBuffer); //UB
-		//Asset->writeDescriptorSets.clear();
+		Asset->writeDescriptorSets.clear();
 		vkFreeDescriptorSets(Device, Asset->DescriptorPool, 1, &Asset->DescriptorSet);
 		vkDestroyDescriptorPool(Device, Asset->DescriptorPool, nullptr);
 		vkDestroyPipeline(Device, Asset->Pipeline, nullptr);
@@ -1184,7 +1184,7 @@ namespace Spaceng
 	void VulkanRenderer::cleanUpBuffer(VkDevice* Device, Buffer* buffer)
 	{
 		vkDestroyBuffer(*Device, buffer->buffer, nullptr);
-		MemoryHandle->DeallocateBufferMemory(Device, buffer);
+		VulkanBufferMemory::DeallocateBufferMemory(Device, buffer);
 		buffer->buffer = VK_NULL_HANDLE;
 	}
 

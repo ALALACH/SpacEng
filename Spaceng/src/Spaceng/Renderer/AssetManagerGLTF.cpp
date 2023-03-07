@@ -47,7 +47,7 @@ namespace Spaceng
 		tinygltf::Model model;
 	}
 
-	void Model::generateQuad(VkDevice* Device, VkPhysicalDevice* PhysicalDevice,VulkanBufferMemory* MemoryHandle )
+	void Model::generateQuad(VkDevice* Device, VkPhysicalDevice* PhysicalDevice )
 	{
 		struct Vertex {
 			float pos[3];
@@ -58,7 +58,7 @@ namespace Spaceng
 		std::vector<Vertex> vertices =
 		{
 			{ {  1.0f,  1.0f, 0.0f }, { 1.0f, 1.0f },{ 0.0f, 0.0f, 1.0f } },
-			//{ { -1.0f,  1.0f, 0.0f }, { 0.0f, 1.0f },{ 0.0f, 0.0f, 1.0f } },
+			{ { -1.0f,  1.0f, 0.0f }, { 0.0f, 1.0f },{ 0.0f, 0.0f, 1.0f } },
 			{ { -1.0f, -1.0f, 0.0f }, { 0.0f, 0.0f },{ 0.0f, 0.0f, 1.0f } },
 			{ {  1.0f, -1.0f, 0.0f }, { 1.0f, 0.0f },{ 0.0f, 0.0f, 1.0f } }
 		};
@@ -67,11 +67,11 @@ namespace Spaceng
 		std::vector<uint32_t> indices = { 0,1,2, 2,3,0 };
 		Index_ = static_cast<uint32_t>(indices.size());
 
-		VK_CHECK_RESULT(MemoryHandle->ConstructBuffer(VertexBuffer, sizeof(Vertex)* vertices.size(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+		VK_CHECK_RESULT(VulkanBufferMemory::ConstructBuffer(VertexBuffer, sizeof(Vertex)* vertices.size(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
 			, *Device, PhysicalDevice, true, false, vertices.data()));
 
-		VK_CHECK_RESULT(MemoryHandle->ConstructBuffer(IndexBuffer, sizeof(uint32_t) * indices.size(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+		VK_CHECK_RESULT(VulkanBufferMemory::ConstructBuffer(IndexBuffer, sizeof(uint32_t) * indices.size(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
 			, *Device, PhysicalDevice, true, false, indices.data()));
 		
@@ -96,7 +96,7 @@ namespace Spaceng
 		void* ImgData =stbi_load(filename.c_str(), &stb_width, &stb_height, &stb_channels, 4);
 		SE_LOG_DEBUG("Loading Texture: {0}", filename.c_str())
 		SE_ASSERT(ImgData, "Could not load Texture File.");
-		uint32_t ImgSize = stb_width * stb_height * 4;
+		uint64_t ImgSize = stb_width * stb_height * 4;
 		
 
 		width = stb_width;
@@ -154,13 +154,11 @@ namespace Spaceng
 			memAllocInfo.memoryTypeIndex = VulkanBufferMemory::getMemoryType(deviceMemoryProperties, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, memReqs);
 			VK_CHECK_RESULT(vkAllocateMemory(*Device, &memAllocInfo, nullptr, &memory));
 			VK_CHECK_RESULT(vkBindBufferMemory(*Device, stagingbuffer, memory, 0));
-#if HostAccess
 			//Host-Access
 			void* data;
 			VK_CHECK_RESULT(vkMapMemory(*Device, memory, 0, memReqs.size, 0, &data));
 		    memcpy(data, ImgData, ImgSize);      // needed for buffer copying or transfer purposes inside the Application
 			vkUnmapMemory(*Device, memory);
-#endif
 
 			// Setup buffer copy regions for each mip level and miplvl 0 [Full Resolution]
 			std::vector<VkBufferImageCopy> bufferCopyRegions;
@@ -195,7 +193,7 @@ namespace Spaceng
 			ImageCI.usage = imageUsageFlags;
 			if (!(ImageCI.usage & VK_IMAGE_USAGE_TRANSFER_DST_BIT))
 			{
-				ImageCI.usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+				ImageCI.usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;   //TODO : research image usuage in depth
 			}
 			VK_CHECK_RESULT(vkCreateImage(*Device, &ImageCI, nullptr, &image));
 
