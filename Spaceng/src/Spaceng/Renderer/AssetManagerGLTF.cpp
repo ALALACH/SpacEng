@@ -47,7 +47,7 @@ namespace Spaceng
 		tinygltf::Model model;
 	}
 
-	void Model::generateQuad(VkDevice* Device, VkPhysicalDevice* PhysicalDevice)
+	void Model::generateQuad(VkDevice* Device, VkPhysicalDevice* PhysicalDevice,VulkanBufferMemory* MemoryHandle )
 	{
 		struct Vertex {
 			float pos[3];
@@ -58,67 +58,31 @@ namespace Spaceng
 		std::vector<Vertex> vertices =
 		{
 			{ {  1.0f,  1.0f, 0.0f }, { 1.0f, 1.0f },{ 0.0f, 0.0f, 1.0f } },
-			{ { -1.0f,  1.0f, 0.0f }, { 0.0f, 1.0f },{ 0.0f, 0.0f, 1.0f } },
+			//{ { -1.0f,  1.0f, 0.0f }, { 0.0f, 1.0f },{ 0.0f, 0.0f, 1.0f } },
 			{ { -1.0f, -1.0f, 0.0f }, { 0.0f, 0.0f },{ 0.0f, 0.0f, 1.0f } },
 			{ {  1.0f, -1.0f, 0.0f }, { 1.0f, 0.0f },{ 0.0f, 0.0f, 1.0f } }
 		};
 
 		// Setup indices
 		std::vector<uint32_t> indices = { 0,1,2, 2,3,0 };
-		indexCount = static_cast<uint32_t>(indices.size());
+		Index_ = static_cast<uint32_t>(indices.size());
 
-		VulkanBufferMemory::ConstructBuffer(VertexBuffer, sizeof(Vertex) * vertices.size(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+		VK_CHECK_RESULT(MemoryHandle->ConstructBuffer(VertexBuffer, sizeof(Vertex)* vertices.size(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-			, *Device, PhysicalDevice, true, false, vertices.data());
+			, *Device, PhysicalDevice, true, false, vertices.data()));
 
-		VulkanBufferMemory::ConstructBuffer(IndexBuffer, sizeof(uint32_t) * indices.size(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+		VK_CHECK_RESULT(MemoryHandle->ConstructBuffer(IndexBuffer, sizeof(uint32_t) * indices.size(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-			, *Device, PhysicalDevice, true, false, indices.data());
+			, *Device, PhysicalDevice, true, false, indices.data()));
 		
-
-		//Binding
-		bindingDescriptions.resize(1);
-		bindingDescriptions[0].binding = Vertex_Binding_Index;
-		bindingDescriptions[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-		bindingDescriptions[0].stride = sizeof(Vertex);
-
-		//Atributes
-		// 
-		//pos
-		attributeDescriptions.resize(3);
-		attributeDescriptions[0].binding = Vertex_Binding_Index;
-		attributeDescriptions[0].location = 0;
-		attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-		attributeDescriptions[0].offset = offsetof(Vertex, pos);
-
-		//uv 
-		attributeDescriptions[0].binding = Vertex_Binding_Index;
-		attributeDescriptions[0].location = 1;
-		attributeDescriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
-		attributeDescriptions[0].offset = offsetof(Vertex, uv);
-
-		//normal
-		attributeDescriptions[0].binding = Vertex_Binding_Index;
-		attributeDescriptions[0].location = 2;
-		attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-		attributeDescriptions[0].offset = offsetof(Vertex, normal);
-
-		//inputstate
-		inputState.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-		inputState.vertexBindingDescriptionCount = static_cast<uint32_t>(bindingDescriptions.size());
-		inputState.pVertexBindingDescriptions = bindingDescriptions.data();
-		inputState.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
-		inputState.pVertexAttributeDescriptions = attributeDescriptions.data();
 	}
 	void Model::Draw(VkCommandBuffer cmd)
 	{
 		
 			VkDeviceSize offsets[1] = { 0 };
-			vkCmdBindVertexBuffers(cmd, Vertex_Binding_Index, 1, &VertexBuffer.buffer, offsets);
+			vkCmdBindVertexBuffers(cmd, Vertex_Binding_Index_0, 1, &VertexBuffer.buffer, offsets);
 			vkCmdBindIndexBuffer(cmd, IndexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
-
-			vkCmdDrawIndexed(cmd, indexCount, 1, 0, 0, 0);
-		
+			vkCmdDrawIndexed(cmd, Index_, 1, 0, 0, 0);	
 	}
 
 
@@ -130,7 +94,8 @@ namespace Spaceng
 
 		int stb_width, stb_height, stb_channels;
 		void* ImgData =stbi_load(filename.c_str(), &stb_width, &stb_height, &stb_channels, 4);
-		SE_ASSERT(!ImgData, "Could not load File");
+		SE_LOG_DEBUG("Loading Texture: {0}", filename.c_str())
+		SE_ASSERT(ImgData, "Could not load Texture File.");
 		uint32_t ImgSize = stb_width * stb_height * 4;
 		
 

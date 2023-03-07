@@ -6,7 +6,7 @@
 #include <glm/glm/gtc/matrix_transform.hpp>
 #include <glm/glm/gtc/type_ptr.hpp>
 
-
+#define Vertex_Binding_Index_0 0
 //stb_image included in Tinygltf
 #define STB_IMAGE_IMPLEMENTATION
 #include "tinygltf/tiny_gltf.h"
@@ -59,17 +59,14 @@ namespace Spaceng
 		~Model();
 		void LoadFromFile(VkDevice* Device, VkPhysicalDevice* PhysicalDevice, std::string filename);
 		void Draw(VkCommandBuffer cmd);
-		void generateQuad(VkDevice* Device, VkPhysicalDevice* PhysicalDevice); //for custom purposes
+		void generateQuad(VkDevice* Device, VkPhysicalDevice* PhysicalDevice, VulkanBufferMemory* MemoryHandle); //for custom purposes
 
 		
 	private:
+		uint32_t Index_;
 		Buffer VertexBuffer;
 		Buffer IndexBuffer;
-		uint32_t indexCount;
-		VkPipelineVertexInputStateCreateInfo inputState;
-		std::vector<VkVertexInputBindingDescription> bindingDescriptions;
-		std::vector<VkVertexInputAttributeDescription> attributeDescriptions;
-		enum BIND { Vertex_Binding_Index = 0 };
+		
 	};
 
 
@@ -95,7 +92,8 @@ namespace Spaceng
 		VkDescriptorSetLayout DescriptorSetLayout = VK_NULL_HANDLE;
 		VkDescriptorPool DescriptorPool = VK_NULL_HANDLE;
 		VkDescriptorSet DescriptorSet = VK_NULL_HANDLE;
-		std::vector<VkWriteDescriptorSet> writeDescriptorSets;
+		VkWriteDescriptorSet WriteUniform;
+		VkWriteDescriptorSet WriteImage;
 
 		VkPipelineLayout PipelineLayout = VK_NULL_HANDLE;
 		VkPipeline Pipeline = VK_NULL_HANDLE;
@@ -107,8 +105,8 @@ namespace Spaceng
 
 		struct UBMatrix {
 			glm::mat4 projection;
-			glm::mat4 model;
 			glm::mat4 view;
+			glm::mat4 model;
 			glm::vec3 camPos;
 		}UBOMatrices;
 	};

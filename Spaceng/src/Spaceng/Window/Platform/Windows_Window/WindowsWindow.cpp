@@ -41,16 +41,15 @@ namespace Spaceng {
 		}
 		SE_ASSERT(glfwVulkanSupported(), "GLFW not supported");
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-
+		//glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 
 		m_Window = glfwCreateWindow(Window_Data.Width, Window_Data.Height, Window_Data.Tittle.c_str(), nullptr, nullptr);
 		glfwSetWindowPos(m_Window, Window_Data.posx, Window_Data.posy);
 
 		
-		Renderer->CreateDisplayPrimitives(m_Window);
+		Renderer->CreateSurfacePrimitives(m_Window);
 		Renderer->CreateDisplayTemplate(&Window_Data.Width,&Window_Data.Height,Window_Data.Vsync);
 
-		//glfwMakeContextCurrent(m_Window);
 		glfwSetWindowUserPointer(m_Window, &Window_Data);
 
 
@@ -170,10 +169,10 @@ namespace Spaceng {
 
 	void WindowsWindow::SetVsync(bool Enabled)
 	{
-		if (Enabled)
+		/*if (Enabled)
 			glfwSwapInterval(1);
 		else
-			glfwSwapInterval(0);
+			glfwSwapInterval(0);*/
 		Window_Data.Vsync = Enabled;	
 	}
 

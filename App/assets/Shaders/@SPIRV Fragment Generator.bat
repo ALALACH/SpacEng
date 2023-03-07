@@ -1,1 +1,1 @@
-C:/VulkanSDK/1.3.204.1/Bin/glslc triangle.frag -o triangle.frag.spv
+C:/VulkanSDK/1.3.204.1/Bin/glslc Screen.frag -o Screen.frag.spv

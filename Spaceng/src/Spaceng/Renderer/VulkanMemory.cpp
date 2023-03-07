@@ -1,9 +1,6 @@
 #include"PCH.h"
 #include"VulkanMemory.h"
 
-
-
-
 namespace Spaceng
 {
 
@@ -12,14 +9,12 @@ namespace Spaceng
 	{
 		Buffer.usageflags = usageflags;
 		Buffer.MemoryPropertyflags = MemoryPropertyflags;
-		Buffer.mapaccess = mapAccess;
 		Buffer.size = size;
 
 		VkBufferCreateInfo BufferCI{};
 		BufferCI.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 		BufferCI.usage = Buffer.usageflags;
 		BufferCI.size = Buffer.size;
-		BufferCI.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		VK_CHECK_RESULT(vkCreateBuffer(Device, &BufferCI, nullptr, &Buffer.buffer));
 
 		VkMemoryRequirements memReq;
@@ -46,8 +41,8 @@ namespace Spaceng
 		if (data != nullptr) //MeshBuffer Mapping
 		{
 			//Host Access to Device Memory Objects
-			VK_CHECK_RESULT(vkMapMemory(Device, Buffer.memory, 0, Buffer.size, 0, &Buffer.mapped));
-			memcpy(&Buffer.mapped, data, Buffer.size);
+			VK_CHECK_RESULT(vkMapMemory(Device, Buffer.memory, 0, VK_WHOLE_SIZE, 0, &Buffer.mapped));
+			memcpy(Buffer.mapped, data, Buffer.size);
 
 			//guarantee that writes to the memory object from the host are made available to the host domain
 			if ((Buffer.MemoryPropertyflags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) == 0)
@@ -62,7 +57,7 @@ namespace Spaceng
 			vkUnmapMemory(Device, Buffer.memory);
 			Buffer.mapped = nullptr;
 		}
-		if (!data && mapAccess) //UniformBuffers Updates Specefic 
+		if (data && mapAccess) //UniformBuffers Updates Specefic 
 		{
 			VK_CHECK_RESULT(vkMapMemory(Device, Buffer.memory, 0, Buffer.size, 0, &Buffer.mapped));
 		}
@@ -81,7 +76,7 @@ namespace Spaceng
 
 	void VulkanBufferMemory::DeallocateBufferMemory(VkDevice* Device, Buffer* buffer)
 	{
-		if (buffer->mapaccess)
+		if (buffer->mapped)
 			vkUnmapMemory(*Device, buffer->memory);
 		vkFreeMemory(*Device, buffer->memory, nullptr);
 		//VK_SPEC : If a memory object is mapped at the time it is freed, it is implicitly unmapped.

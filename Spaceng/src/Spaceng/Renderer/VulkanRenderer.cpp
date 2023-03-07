@@ -34,7 +34,11 @@ namespace Spaceng
 		{
 			vkDestroyRenderPass(Device, Renderpass, nullptr);
 		}
-		
+
+		vkDestroyImageView(Device, DepthStencil.view, nullptr);
+		vkDestroyImage(Device, DepthStencil.image, nullptr);
+		vkFreeMemory(Device, DepthStencil.memory, nullptr);
+
 		for (auto& shaderModule : ShaderModules)
 		{
 			vkDestroyShaderModule(Device, shaderModule, nullptr);
@@ -53,20 +57,28 @@ namespace Spaceng
 	};
 
 
-	void VulkanRenderer::InitRenderer(std::vector<const char*> EnabledInstanceextensions, std::vector<const char*> EnabledDeviceextensions,
+	void VulkanRenderer::InitExtensions(std::vector<const char*> EnabledInstanceextensions, std::vector<const char*> EnabledDeviceextensions,
 		VkPhysicalDeviceFeatures EnableddeviceFeatures)
 	{
 		PushExtensionsandFeatures(EnabledInstanceextensions, EnabledDeviceextensions, EnableddeviceFeatures);
+	};
+	void VulkanRenderer::InitRenderer()
+	{
 		CreateInstance();
 		CreateDevice();
 		SetupFunctionPtr();
 		CreatePipelineCache();
 		CreateSemaphores();
-	};
-
+		getSupportedDepth();
+		SubmitInformation();
+	}
 
 	void VulkanRenderer::CreateInstance()
 	{
+		if (Validation)
+		{
+			//SetEnvironmentVariableA("VK_INSTANCE_LAYERS", "VK_LAYER_LUNARG_api_dump");
+		}
 		VkApplicationInfo appinfo = {};
 		appinfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
 		appinfo.pApplicationName = "SPACE ENGINE";
@@ -87,6 +99,7 @@ namespace Spaceng
 			InstanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 			InstanceExtensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
 			InstanceExtensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+			InstanceExtensions.push_back(VK_EXT_VALIDATION_FEATURES_EXTENSION_NAME);
 		}
 
 		// Get list of supported extensions
@@ -128,6 +141,8 @@ namespace Spaceng
 		if (Validation)
 		{
 			const char* validationLayerName = "VK_LAYER_KHRONOS_validation";
+			const char* LogLayer = "VK_LAYER_LUNARG_api_dump";
+			const char* enabledLayerNames[] = { validationLayerName, LogLayer };
 			uint32_t instanceLayerCount;
 			vkEnumerateInstanceLayerProperties(&instanceLayerCount, nullptr);
 			std::vector<VkLayerProperties> instanceLayerProperties(instanceLayerCount);
@@ -143,7 +158,7 @@ namespace Spaceng
 			}
 			SE_LOG_DEBUG("-------------------------")
 			if (validationLayerPresent) {
-				instanceCreateInfo.ppEnabledLayerNames = &validationLayerName;
+				instanceCreateInfo.ppEnabledLayerNames = enabledLayerNames;
 				instanceCreateInfo.enabledLayerCount = 1;
 			}
 			else {
@@ -328,9 +343,6 @@ namespace Spaceng
 
 		vkGetDeviceQueue(Device, QueueTypeFlagBitIndex.graphics,0, &Queue);
 
-
-
-		
 	}
 	void VulkanRenderer::SetupFunctionPtr() 
 	{
@@ -339,7 +351,7 @@ namespace Spaceng
 		fpGetPhysicalDeviceSurfaceCapabilitiesKHR = reinterpret_cast<PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR>(vkGetInstanceProcAddr(Instance, "vkGetPhysicalDeviceSurfaceCapabilitiesKHR"));
 		fpGetPhysicalDeviceSurfaceFormatsKHR = reinterpret_cast<PFN_vkGetPhysicalDeviceSurfaceFormatsKHR>(vkGetInstanceProcAddr(Instance, "vkGetPhysicalDeviceSurfaceFormatsKHR"));
 		fpGetPhysicalDeviceSurfacePresentModesKHR = reinterpret_cast<PFN_vkGetPhysicalDeviceSurfacePresentModesKHR>(vkGetInstanceProcAddr(Instance, "vkGetPhysicalDeviceSurfacePresentModesKHR"));
-		//set Device Fnc
+		//set Device Fnc // for now not functional : todo : debug
 		fpCreateSwapchainKHR = reinterpret_cast<PFN_vkCreateSwapchainKHR>(vkGetDeviceProcAddr(Device, "vkCreateSwapchainKHR"));
 		fpDestroySwapchainKHR = reinterpret_cast<PFN_vkDestroySwapchainKHR>(vkGetDeviceProcAddr(Device, "vkDestroySwapchainKHR"));
 		fpGetSwapchainImagesKHR = reinterpret_cast<PFN_vkGetSwapchainImagesKHR>(vkGetDeviceProcAddr(Device, "vkGetSwapchainImagesKHR"));
@@ -351,7 +363,6 @@ namespace Spaceng
 	{
 		VkPipelineCacheCreateInfo PipelineCacheCI = {};
 		PipelineCacheCI.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
-		PipelineCacheCI.pNext = NULL;
 		VK_CHECK_RESULT(vkCreatePipelineCache(Device, &PipelineCacheCI, nullptr, &PipelineCache));
 	}
 
@@ -362,24 +373,164 @@ namespace Spaceng
 		SemaphoreCI.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 		VK_CHECK_RESULT(vkCreateSemaphore(Device, &SemaphoreCI, nullptr, &DelayBeforeCommandExecution));
 		VK_CHECK_RESULT(vkCreateSemaphore(Device, &SemaphoreCI, nullptr, &CommandExecutionComplete));
+
+		
 	}
-
-
-	void VulkanRenderer::SetupDepthBuffer()
+	void VulkanRenderer::getSupportedDepth()
 	{
-		//Img
-		//Memalloc
-		//Imgview
-		//implement in Destructor
-		//TODO : Implement Depthbuffers later for Framebuffers and Renderpass
+		//supported Depth
+		std::vector<VkFormat> depthFormats = {
+				VK_FORMAT_D32_SFLOAT_S8_UINT,
+				VK_FORMAT_D32_SFLOAT,
+				VK_FORMAT_D24_UNORM_S8_UINT,
+				VK_FORMAT_D16_UNORM_S8_UINT,
+				VK_FORMAT_D16_UNORM
+		};
+
+		for (auto& format : depthFormats)
+		{
+			VkFormatProperties formatProps;
+			vkGetPhysicalDeviceFormatProperties(PhysicalDevice, format, &formatProps);
+			// Format must support depth stencil attachment for optimal tiling
+			if (formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)
+			{
+				DepthFormat = format;
+			}
+		}
 	}
 
+	void VulkanRenderer::SubmitInformation()
+	{
+		Submitinfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		Submitinfo.pWaitDstStageMask = &submitPipelineStages;
+		Submitinfo.waitSemaphoreCount = 1;
+		Submitinfo.pWaitSemaphores = &DelayBeforeCommandExecution;
+		Submitinfo.signalSemaphoreCount = 1;
+		Submitinfo.pSignalSemaphores = &CommandExecutionComplete;
+	}
 
-	void VulkanRenderer::CreateDisplayPrimitives(GLFWwindow* Window)
+	void VulkanRenderer::SetupDepthStencil()
+	{
+		VkImageCreateInfo imageCI{};
+		imageCI.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+		imageCI.imageType = VK_IMAGE_TYPE_2D;
+		imageCI.format = DepthFormat;
+		imageCI.extent = { SurfaceWidth, SurfaceHeight, 1 };
+		imageCI.mipLevels = 1;
+		imageCI.arrayLayers = 1;
+		imageCI.samples = VK_SAMPLE_COUNT_1_BIT;
+		imageCI.tiling = VK_IMAGE_TILING_OPTIMAL;
+		imageCI.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+
+		VK_CHECK_RESULT(vkCreateImage(Device, &imageCI, nullptr, &DepthStencil.image));
+		VkMemoryRequirements memReqs{};
+		vkGetImageMemoryRequirements(Device, DepthStencil.image, &memReqs);
+		VkMemoryAllocateInfo memAlloc{};
+		memAlloc.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		memAlloc.allocationSize = memReqs.size;
+		VkPhysicalDeviceMemoryProperties deviceMemoryProperties;
+		vkGetPhysicalDeviceMemoryProperties(PhysicalDevice, &deviceMemoryProperties);
+		memAlloc.memoryTypeIndex = VulkanBufferMemory::getMemoryType(deviceMemoryProperties, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, memReqs);
+		VK_CHECK_RESULT(vkAllocateMemory(Device, &memAlloc, nullptr, &DepthStencil.memory));
+		VK_CHECK_RESULT(vkBindImageMemory(Device, DepthStencil.image, DepthStencil.memory, 0));
+
+		VkImageViewCreateInfo imageViewCI{};
+		imageViewCI.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		imageViewCI.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		imageViewCI.image = DepthStencil.image;
+		imageViewCI.format = DepthFormat;
+		imageViewCI.subresourceRange.baseMipLevel = 0;
+		imageViewCI.subresourceRange.levelCount = 1;
+		imageViewCI.subresourceRange.baseArrayLayer = 0;
+		imageViewCI.subresourceRange.layerCount = 1;
+		imageViewCI.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+		// Stencil aspect should only be set on depth + stencil formats (VK_FORMAT_D16_UNORM_S8_UINT..VK_FORMAT_D32_SFLOAT_S8_UINT
+		if (DepthFormat >= VK_FORMAT_D16_UNORM_S8_UINT) {
+			imageViewCI.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
+		}
+		VK_CHECK_RESULT(vkCreateImageView(Device, &imageViewCI, nullptr, &DepthStencil.view));
+	}
+	void VulkanRenderer::SetupRenderPass()
+	{
+		//Renderpass 
+		std::array<VkAttachmentDescription, 2> attachments = {};
+		// Color attachment
+		attachments[0].format = colorFormat;
+		attachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
+		attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		attachments[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		attachments[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		attachments[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		attachments[0].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+		// Depth attachment
+		attachments[1].format = DepthFormat;
+		attachments[1].samples = VK_SAMPLE_COUNT_1_BIT;
+		attachments[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		attachments[1].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		attachments[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		attachments[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		attachments[1].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		attachments[1].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+		VkAttachmentReference colorReference = {};
+		colorReference.attachment = 0;
+		colorReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+		VkAttachmentReference depthReference = {};
+		depthReference.attachment = 1;
+		depthReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+		VkSubpassDescription subpassDescription = {};
+		subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+		subpassDescription.colorAttachmentCount = 1;
+		subpassDescription.pColorAttachments = &colorReference;
+		subpassDescription.pDepthStencilAttachment = &depthReference;
+		subpassDescription.inputAttachmentCount = 0;
+		subpassDescription.pInputAttachments = nullptr;
+		subpassDescription.preserveAttachmentCount = 0;
+		subpassDescription.pPreserveAttachments = nullptr;
+		subpassDescription.pResolveAttachments = nullptr;
+
+		// Subpass dependencies for layout transitions
+		std::array<VkSubpassDependency, 2> dependencies;
+
+		dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
+		dependencies[0].dstSubpass = 0;
+		dependencies[0].srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+		dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		dependencies[0].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+		dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+		dependencies[1].srcSubpass = 0;
+		dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
+		dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		dependencies[1].dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+		dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		dependencies[1].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+		dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+		VkRenderPassCreateInfo renderPassInfo = {};
+		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+		renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+		renderPassInfo.pAttachments = attachments.data();
+		renderPassInfo.subpassCount = 1;
+		renderPassInfo.pSubpasses = &subpassDescription;
+		renderPassInfo.dependencyCount = static_cast<uint32_t>(dependencies.size());
+		renderPassInfo.pDependencies = dependencies.data();
+
+		VK_CHECK_RESULT(vkCreateRenderPass(Device, &renderPassInfo, nullptr, &Renderpass));
+	}
+
+	
+
+
+	void VulkanRenderer::CreateSurfacePrimitives(GLFWwindow* Window)
 	{
 		//Init Surface
-		glfwCreateWindowSurface(Instance, Window, nullptr, &Surface);
-
+		
+		VK_CHECK_RESULT(glfwCreateWindowSurface(Instance, Window, nullptr, &Surface));
 
 		// Get available queue family properties
 		uint32_t queueCount;
@@ -470,58 +621,14 @@ namespace Spaceng
 				colorSpace = surfaceFormats[0].colorSpace;
 			}
 		}
-
-		//RenderPass
-		VkAttachmentDescription colorAttachmentDescription{};
-		colorAttachmentDescription.format = colorFormat;
-		colorAttachmentDescription.samples = VK_SAMPLE_COUNT_1_BIT;
-		colorAttachmentDescription.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		colorAttachmentDescription.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		colorAttachmentDescription.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		colorAttachmentDescription.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		colorAttachmentDescription.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		colorAttachmentDescription.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-
-		VkAttachmentReference colorReference = {};
-		colorReference.attachment = 0;
-		colorReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-		VkSubpassDescription subpassDescription = {};
-		subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-		subpassDescription.colorAttachmentCount = 1;
-		subpassDescription.pColorAttachments = &colorReference;
-		subpassDescription.inputAttachmentCount = 0;
-		subpassDescription.pInputAttachments = nullptr;
-		subpassDescription.preserveAttachmentCount = 0;
-		subpassDescription.pPreserveAttachments = nullptr;
-		subpassDescription.pResolveAttachments = nullptr;
-
-		VkSubpassDependency dependency = {};
-		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-		dependency.dstSubpass = 0;
-		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependency.srcAccessMask = 0;
-		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-
-		VkRenderPassCreateInfo renderPassInfo = {};
-		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-		renderPassInfo.attachmentCount = 1;
-		renderPassInfo.pAttachments = &colorAttachmentDescription;
-		renderPassInfo.subpassCount = 1;
-		renderPassInfo.pSubpasses = &subpassDescription;
-		renderPassInfo.dependencyCount = 1;
-		renderPassInfo.pDependencies = &dependency;
-
-		VK_CHECK_RESULT(vkCreateRenderPass(Device, &renderPassInfo, nullptr, &Renderpass));
-
-
-		//CommandPool 
+		//CommandPool : Surface Dependency
 		VkCommandPoolCreateInfo CommandPoolCI = {};
 		CommandPoolCI.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 		CommandPoolCI.queueFamilyIndex = queueNodeIndex;
 		CommandPoolCI.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
 		VK_CHECK_RESULT(vkCreateCommandPool(Device, &CommandPoolCI, nullptr, &Commandpool));
+
+		
 	}
 
 
@@ -549,6 +656,9 @@ namespace Spaceng
 		SurfaceWidth = *width;
 		SurfaceHeight = *height;
 
+		SetupDepthStencil();
+		SetupRenderPass();
+	
 		//Present Modes
 		uint32_t presentmodecount;
 		VK_CHECK_RESULT(fpGetPhysicalDeviceSurfacePresentModesKHR(PhysicalDevice, Surface, &presentmodecount, NULL));
@@ -621,7 +731,7 @@ namespace Spaceng
 		SwapchainCI.imageArrayLayers = 1;
 		SwapchainCI.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		SwapchainCI.queueFamilyIndexCount = 0;
-		SwapchainCI.pQueueFamilyIndices = NULL;
+		//SwapchainCI.pQueueFamilyIndices = NULL;
 		SwapchainCI.presentMode = PresentMode;
 		SwapchainCI.oldSwapchain = OldSwapChain;
 		SwapchainCI.clipped = VK_TRUE; //discard rendering operations that affect regions of the surface that are not visible
@@ -684,22 +794,11 @@ namespace Spaceng
 
 			VK_CHECK_RESULT(vkCreateImageView(Device, &SwapChainImageViewCI, nullptr, &SwapChainImageViewBufffer[i].imageview));
 		}
-
-		//CommandBuffers
-		vkFreeCommandBuffers(Device, Commandpool, static_cast<uint32_t>(CommandBuffers.size()), CommandBuffers.data());
-		CommandBuffers.clear();
-		CommandBuffers.resize(ImageCount);
-
-		VkCommandBufferAllocateInfo CommandbufferAllocateInfo = {};
-		CommandbufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		CommandbufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		CommandbufferAllocateInfo.commandBufferCount = 1;
-		CommandbufferAllocateInfo.commandPool = Commandpool;
-
-		for (VkCommandBuffer& commandBuffer : CommandBuffers)
-		{
-			VK_CHECK_RESULT(vkAllocateCommandBuffers(Device, &CommandbufferAllocateInfo, &commandBuffer));
-		}
+		//Depth
+		vkDestroyImageView(Device, DepthStencil.view, nullptr);
+		vkDestroyImage(Device, DepthStencil.image, nullptr);
+		vkFreeMemory(Device, DepthStencil.memory, nullptr);
+		SetupDepthStencil();
 
 		//Framebuffer
 		for (VkFramebuffer& framebuffer : FrameBuffer)
@@ -707,19 +806,37 @@ namespace Spaceng
 		FrameBuffer.clear();
 		FrameBuffer.resize(ImageCount);
 
-		VkFramebufferCreateInfo FramebufferCI {};
+		VkImageView Attachments[2];
+		Attachments[1] = DepthStencil.view;
+		VkFramebufferCreateInfo FramebufferCI{};
 		FramebufferCI.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 		FramebufferCI.renderPass = Renderpass;
-		FramebufferCI.attachmentCount = 1;
+		FramebufferCI.attachmentCount = 2;
+		FramebufferCI.pAttachments = Attachments;
 		FramebufferCI.width = *width;
 		FramebufferCI.height = *height;
 		FramebufferCI.layers = 1;
 
 		for (uint32_t i = 0; i < FrameBuffer.size(); i++)
 		{
-			FramebufferCI.pAttachments = &SwapChainImageViewBufffer[i].imageview;
+			Attachments[0] = SwapChainImageViewBufffer[i].imageview;
 			VK_CHECK_RESULT(vkCreateFramebuffer(Device, &FramebufferCI, nullptr, &FrameBuffer[i]));
 		}
+
+		//CommandBuffers
+		if(CommandBuffers.size()!=0)
+		vkFreeCommandBuffers(Device, Commandpool, static_cast<uint32_t>(CommandBuffers.size()), CommandBuffers.data());
+
+		CommandBuffers.clear();
+		CommandBuffers.resize(ImageCount);
+
+		VkCommandBufferAllocateInfo CommandbufferAllocateInfo = {};
+		CommandbufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		CommandbufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		CommandbufferAllocateInfo.commandBufferCount = CommandBuffers.size();
+		CommandbufferAllocateInfo.commandPool = Commandpool;
+		VK_CHECK_RESULT(vkAllocateCommandBuffers(Device, &CommandbufferAllocateInfo, CommandBuffers.data()));
+	
 
 		//Synchronisation premitives
 		for (auto& fence : QueueFences)
@@ -732,15 +849,41 @@ namespace Spaceng
 		FenceCI.flags = VK_FENCE_CREATE_SIGNALED_BIT; //fence object is created in the signaled state
 
 		for (uint32_t i = 0; i < QueueFences.size(); i++)
+		{
 			VK_CHECK_RESULT(vkCreateFence(Device, &FenceCI, nullptr, &QueueFences[i]));
+		}
+			
 	}
 
+	void VulkanRenderer::setView()
+	{
+		float aspectRatio = 0;
+		if (SurfaceWidth && SurfaceHeight)
+		{
+			aspectRatio = SurfaceWidth / SurfaceHeight;
+		}
+		float fieldOfView = 45.0f;
+		float nearPlane = 0.1f;
+		float farPlane = 1000.0f;
+		projectionMatrix = glm::perspective(glm::radians(fieldOfView), aspectRatio, nearPlane, farPlane);
+		modelMatrix = glm::mat4(1.0f);
+		CameraPosition = glm::vec3(0.0f, 0.0f, -2.5f);
+		glm::vec3 rotation = glm::vec3(0.0f, 15.0f, 0.0f);
+
+		modelMatrix = glm::rotate(modelMatrix, glm::radians(rotation.x *  1.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+		modelMatrix = glm::rotate(modelMatrix, glm::radians(rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
+		modelMatrix = glm::rotate(modelMatrix, glm::radians(rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
+
+		glm::mat4 transM = glm::translate(glm::mat4(1.0f), CameraPosition);
+		viewMatrix = transM * modelMatrix;
+	}
 
 	void VulkanRenderer::prepareUniformBuffer(VkGLTFAsset* Asset,bool mapAccess, bool descriptorAcess)
 	{
-		VulkanBufferMemory::ConstructBuffer(Asset->UniformBuffer,sizeof(Asset->UBOMatrices),VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+		VK_CHECK_RESULT(MemoryHandle->ConstructBuffer(Asset->UniformBuffer, sizeof(Asset->UBOMatrices), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-			Device, &PhysicalDevice, descriptorAcess, mapAccess, &Asset->UBOMatrices);
+			Device, &PhysicalDevice, descriptorAcess, mapAccess, &Asset->UBOMatrices));
+
 		updateUniformBuffer(Asset);
 	}
 
@@ -749,6 +892,10 @@ namespace Spaceng
 	{
 		//writes to memory block not needed so no VK_MEMORY_PROPERTY_HOST_COHERENT_BIT 
 		//todo : Apply changes to UBOmatrices (view / scale / projection /Camera Position)
+		Asset->UBOMatrices.projection = projectionMatrix;
+		Asset->UBOMatrices.view = viewMatrix;
+		Asset->UBOMatrices.model = modelMatrix;
+		Asset->UBOMatrices.camPos = CameraPosition;
 		memcpy(Asset->UniformBuffer.mapped, &Asset->UBOMatrices, sizeof(Asset->UBOMatrices));
 	}
 
@@ -776,7 +923,7 @@ namespace Spaceng
 		VkDescriptorSetLayoutCreateInfo descriptorLayoutCI = {};
 		descriptorLayoutCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
 		descriptorLayoutCI.pBindings = LayoutBindings.data();
-		descriptorLayoutCI.bindingCount = 2;
+		descriptorLayoutCI.bindingCount = static_cast<uint32_t>(LayoutBindings.size());
 		VK_CHECK_RESULT(vkCreateDescriptorSetLayout(Device, &descriptorLayoutCI, nullptr, &Asset->DescriptorSetLayout));
 
 		//descriptor Pool
@@ -795,8 +942,9 @@ namespace Spaceng
 
 		VkDescriptorPoolCreateInfo DescriptorpoolCI {};
 		DescriptorpoolCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-		DescriptorpoolCI.poolSizeCount = 2;
-		DescriptorpoolCI.maxSets = 1;
+		DescriptorpoolCI.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+		DescriptorpoolCI.poolSizeCount = static_cast<uint32_t>(DescriptorPoolSizes.size());
+		DescriptorpoolCI.maxSets = 2;
 		DescriptorpoolCI.pPoolSizes = DescriptorPoolSizes.data();
 
 		VK_CHECK_RESULT(vkCreateDescriptorPool(Device, &DescriptorpoolCI, nullptr, &Asset->DescriptorPool));
@@ -810,14 +958,12 @@ namespace Spaceng
 
 		VK_CHECK_RESULT(vkAllocateDescriptorSets(Device, &DescriptorAllocateInfo, &Asset->DescriptorSet));
 
-		Asset->writeDescriptorSets.reserve(2);
 		UpdateDescriptorSet(Asset);
 	}
 	void VulkanRenderer::UpdateDescriptorSet(VkGLTFAsset* Asset , bool updateUniform , bool updateTexture)
 	{
 		//check vkCmdPushDescriptorSetKHR for faster behaviour
 		//      vkCmdPushConstants
-
 		if (updateUniform)
 		{ 
 			VkWriteDescriptorSet writeDescriptorSet1{};
@@ -827,7 +973,8 @@ namespace Spaceng
 			writeDescriptorSet1.dstBinding = 0;
 			writeDescriptorSet1.pBufferInfo = &Asset->UniformBuffer.BufferDescriptor;
 			writeDescriptorSet1.descriptorCount = 1;
-			Asset->writeDescriptorSets[0] = writeDescriptorSet1;
+			Asset->WriteUniform = writeDescriptorSet1;
+			vkUpdateDescriptorSets(Device, 1, &Asset->WriteUniform, 0, NULL);
 		}
 		if (updateTexture)
 		{ 
@@ -838,9 +985,9 @@ namespace Spaceng
 			writeDescriptorSet2.dstBinding = 1;
 			writeDescriptorSet2.pImageInfo = &Asset->AssetTexture.TextureDescriptor;  // Video-Frames Refreshing by re-writing the texture descriptor
 			writeDescriptorSet2.descriptorCount = 1;
-			Asset->writeDescriptorSets[1]= writeDescriptorSet2;
+			Asset->WriteImage = writeDescriptorSet2;
+			vkUpdateDescriptorSets(Device, 1, &Asset->WriteImage, 0, NULL);
 		}
-		vkUpdateDescriptorSets(Device, Asset->writeDescriptorSets.size(), Asset->writeDescriptorSets.data(), 0, NULL);
 	}
 
 	void VulkanRenderer::preparePipeline(VkGLTFAsset* Asset)
@@ -876,12 +1023,12 @@ namespace Spaceng
 		MultiSampleCI.flags = 0;
 
 		//ColorBlendState
-		VkPipelineColorBlendAttachmentState pipelineColorBlendAttachmentState {};
-		pipelineColorBlendAttachmentState.colorWriteMask = 0xf;
-		pipelineColorBlendAttachmentState.blendEnable = VK_FALSE;
+		VkPipelineColorBlendAttachmentState ColorBlendAttachmentState {};
+		ColorBlendAttachmentState.colorWriteMask = 0xf;
+		ColorBlendAttachmentState.blendEnable = VK_FALSE;
 		VkPipelineColorBlendStateCreateInfo ColorBlendStateCI {};
 		ColorBlendStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-		ColorBlendStateCI.pAttachments = &pipelineColorBlendAttachmentState;
+		ColorBlendStateCI.pAttachments = &ColorBlendAttachmentState;
 		ColorBlendStateCI.attachmentCount = 1;
 
 		//DepthStencil
@@ -901,7 +1048,11 @@ namespace Spaceng
 
 		//DynamicState
 		VkPipelineDynamicStateCreateInfo DynamicStateCI {};
-		std::vector<VkDynamicState> EnabledDynamicState = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
+		std::vector<VkDynamicState> EnabledDynamicState = 
+		{ 
+			VK_DYNAMIC_STATE_VIEWPORT,
+			VK_DYNAMIC_STATE_SCISSOR 
+		};
 		DynamicStateCI.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
 		DynamicStateCI.pDynamicStates = EnabledDynamicState.data();
 		DynamicStateCI.dynamicStateCount = static_cast<uint32_t>(EnabledDynamicState.size());
@@ -912,6 +1063,60 @@ namespace Spaceng
 		shaderStages[0] = LoadShader(Asset->VertexShaderFile, VK_SHADER_STAGE_VERTEX_BIT);
 		shaderStages[1] = LoadShader(Asset->FragmentShaderFile, VK_SHADER_STAGE_FRAGMENT_BIT);
 
+
+
+		VkVertexInputBindingDescription BindigDesc;
+
+		//temp
+		struct Vertex {
+			float pos[3];
+			float uv[2];
+			float normal[3];
+		};
+		//inputstate
+		//Binding
+		//BindigDesc.resize(1);
+		//VkVertexInputBindingDescription bindingdiscription;
+		BindigDesc.binding = Vertex_Binding_Index_0;
+		BindigDesc.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+		BindigDesc.stride = sizeof(Vertex);
+		//BindigDesc.push_back(bindingdiscription);
+
+
+		//Atributes
+		// 
+		//pos
+		std::vector<VkVertexInputAttributeDescription> AttributeDesc;
+		AttributeDesc.clear();
+		AttributeDesc.resize(3);
+		VkVertexInputAttributeDescription AttributeDescription;
+		AttributeDescription.binding = Vertex_Binding_Index_0;
+		AttributeDescription.location = 0;
+		AttributeDescription.format = VK_FORMAT_R32G32B32_SFLOAT;
+		AttributeDescription.offset = offsetof(Vertex, pos);
+		AttributeDesc[0] = AttributeDescription;
+
+		//uv 
+		AttributeDescription.binding = Vertex_Binding_Index_0;
+		AttributeDescription.location = 1;
+		AttributeDescription.format = VK_FORMAT_R32G32_SFLOAT;
+		AttributeDescription.offset = offsetof(Vertex, uv);
+		AttributeDesc[1] = AttributeDescription;
+
+		//normal
+		AttributeDescription.binding = Vertex_Binding_Index_0;
+		AttributeDescription.location = 2;
+		AttributeDescription.format = VK_FORMAT_R32G32B32_SFLOAT;
+		AttributeDescription.offset = offsetof(Vertex, normal);
+		AttributeDesc[2] = AttributeDescription;
+		VkPipelineVertexInputStateCreateInfo inputState;
+		inputState.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+		inputState.vertexBindingDescriptionCount = 1;//static_cast<uint32_t>(Asset->AssetModel.BindigDesc.size());
+		inputState.pVertexBindingDescriptions = &BindigDesc;
+		inputState.vertexAttributeDescriptionCount = static_cast<uint32_t>(AttributeDesc.size());
+		inputState.pVertexAttributeDescriptions = AttributeDesc.data();
+		inputState.flags = 0;
+		inputState.pNext = 0;
 
 
 
@@ -928,13 +1133,13 @@ namespace Spaceng
 		PipelineCI.pRasterizationState = &RasterizationStateCI;
 		PipelineCI.pMultisampleState = &MultiSampleCI;
 		PipelineCI.pColorBlendState = &ColorBlendStateCI;
-		if (Asset->DepthStencilEnabled){ 
-		PipelineCI.pDepthStencilState = &DepthStencilCI;}
+		PipelineCI.pDepthStencilState = &DepthStencilCI;
 		PipelineCI.pViewportState = &pipelineViewportStateCI;
 		PipelineCI.pDynamicState = &DynamicStateCI;
 		PipelineCI.stageCount = static_cast<uint32_t>(shaderStages.size());
 		PipelineCI.pStages = shaderStages.data();
-		PipelineCI.pVertexInputState = &Asset->AssetModel.inputState;
+		PipelineCI.pVertexInputState = &inputState;
+
 
 		VK_CHECK_RESULT(vkCreateGraphicsPipelines(Device, PipelineCache, 1, &PipelineCI, nullptr, &Asset->Pipeline));
 	}
@@ -949,19 +1154,19 @@ namespace Spaceng
 		}
 		else if (Type == texture_On_Screen)
 		{
-			Asset->AssetModel.generateQuad(&Device, &PhysicalDevice);
 			std::string Texturefilepath = filepath + "\\assets\\Textures\\" + Asset->getName() + ".jpg"; //change format accordingly
-			Asset->AssetTexture.loadFromFile(Texturefilepath, VK_FORMAT_R8G8B8A8_UNORM, &Device, &PhysicalDevice, Commandpool, Queue);
+			Asset->AssetTexture.loadFromFile(Texturefilepath, VK_FORMAT_B8G8R8A8_UNORM, &Device, &PhysicalDevice, Commandpool, Queue);
+			Asset->AssetModel.generateQuad(&Device, &PhysicalDevice,MemoryHandle);
+			prepareUniformBuffer(Asset,true);
+			prepareDescriptors(Asset);
+			preparePipeline(Asset);
 		}
-		prepareUniformBuffer(Asset);
-		prepareDescriptors(Asset);
-		preparePipeline(Asset);
 	}
 
 	void VulkanRenderer::CleanUpAsset(VkGLTFAsset* Asset)
 	{
 		cleanUpBuffer(&Device, &Asset->UniformBuffer); //UB
-		Asset->writeDescriptorSets.clear();
+		//Asset->writeDescriptorSets.clear();
 		vkFreeDescriptorSets(Device, Asset->DescriptorPool, 1, &Asset->DescriptorSet);
 		vkDestroyDescriptorPool(Device, Asset->DescriptorPool, nullptr);
 		vkDestroyPipeline(Device, Asset->Pipeline, nullptr);
@@ -979,7 +1184,7 @@ namespace Spaceng
 	void VulkanRenderer::cleanUpBuffer(VkDevice* Device, Buffer* buffer)
 	{
 		vkDestroyBuffer(*Device, buffer->buffer, nullptr);
-		VulkanBufferMemory::DeallocateBufferMemory(Device, buffer);
+		MemoryHandle->DeallocateBufferMemory(Device, buffer);
 		buffer->buffer = VK_NULL_HANDLE;
 	}
 
@@ -1037,8 +1242,8 @@ namespace Spaceng
 		cmdBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
 		VkClearValue clearValues[2];
-		clearValues[0].color = { { 0.1f, 0.1f, 0.1f, 1.0f } };
-		clearValues[1].depthStencil = { 1.0f, 0 };
+		clearValues[0].color = { {1.0f, 0.44f, 0.44f, 1.0f } };
+		clearValues[1].depthStencil = {1.0f, 0 };	
 
 		VkRenderPassBeginInfo renderPassBeginInfo{};
 		renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -1063,19 +1268,23 @@ namespace Spaceng
 			Viewport.minDepth = 0.0f;
 			Viewport.maxDepth = 1.0f;
 			vkCmdSetViewport(CommandBuffers[i], 0, 1, &Viewport);
-			VkRect2D rect2D{};
-			rect2D.extent.width = SurfaceWidth;
-			rect2D.extent.height = SurfaceHeight;
-			rect2D.offset.x = 0;
-			rect2D.offset.y = 0;
-			vkCmdSetScissor(CommandBuffers[i], 0, 1, &rect2D);
+			VkRect2D scissor{};
+			scissor.extent.width = SurfaceWidth;
+			scissor.extent.height = SurfaceHeight;
+			scissor.offset.x = 0;
+			scissor.offset.y = 0;
+			vkCmdSetScissor(CommandBuffers[i], 0, 1, &scissor);
 			
 			for (uint32_t j =0 ; j< Assets->size(); ++j)
 			{
 				vkCmdBindDescriptorSets(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, (*Assets)[j]->PipelineLayout, 0, 1, &(*Assets)[j]->DescriptorSet, 0, NULL);
 				vkCmdBindPipeline(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, (*Assets)[j]->Pipeline);
 
-				(*Assets)[j]->AssetModel.Draw(CommandBuffers[i]); //to do : to be implemented ...ongoing process
+				//(*Assets)[j]->AssetModel.Draw(CommandBuffers[i]); //to do : to be implemented ...ongoing process
+				VkDeviceSize offsets[1] = { 0 };
+				vkCmdBindVertexBuffers(CommandBuffers[i], Vertex_Binding_Index_0, 1, &(*Assets)[j]->AssetModel.VertexBuffer.buffer, offsets);
+				vkCmdBindIndexBuffer(CommandBuffers[i], (*Assets)[j]->AssetModel.IndexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+				vkCmdDrawIndexed(CommandBuffers[i], (*Assets)[j]->AssetModel.Index_, 1, 0, 0, 0);
 			}
 			//todo: implement UI Command Recorder
 
@@ -1086,18 +1295,12 @@ namespace Spaceng
 	}
 	void VulkanRenderer::render (std::vector<VkGLTFAsset*>* Assets)
 	{
-		Submitinfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		Submitinfo.pWaitDstStageMask = &submitPipelineStages;
-		Submitinfo.waitSemaphoreCount = 1;
-		Submitinfo.pWaitSemaphores = &DelayBeforeCommandExecution;
-		Submitinfo.signalSemaphoreCount = 1;
-		Submitinfo.pSignalSemaphores = &CommandExecutionComplete;
 
 		VkResult result = fpAcquireNextImageKHR(Device, Swapchain, UINT64_MAX, DelayBeforeCommandExecution, (VkFence)nullptr, &ImageIndex);
 		// the application must use semaphore and/or fence to ensure that the image layout and contents are not modified 
 		// until the presentation engine reads have completed. the application must use semaphore and/or fence 
 		// to ensure that the image layout and contents are not modified until the presentation engine reads have completed.
-	
+	    
 		if ((result == VK_ERROR_OUT_OF_DATE_KHR) || (result == VK_SUBOPTIMAL_KHR)) 
 		// Check the Swapchain and Surface Compatability
 		{
@@ -1113,13 +1316,13 @@ namespace Spaceng
 		}
 		// Use a fence to wait until the Queue's command buffer has finished execution before using it again
 		//can use fence when Multiviewing /Multithreading: to insert a dependency from a queue to the host.
-		VK_CHECK_RESULT(vkWaitForFences(Device, 1, &QueueFences[ImageIndex], VK_TRUE, UINT64_MAX));
-		VK_CHECK_RESULT(vkResetFences(Device, 1, &QueueFences[ImageIndex]));
-
+		//VK_CHECK_RESULT(vkWaitForFences(Device, 1, &QueueFences[ImageIndex], VK_TRUE, UINT64_MAX));
+		//VK_CHECK_RESULT(vkResetFences(Device, 1, &QueueFences[ImageIndex]));
+		
 		Submitinfo.commandBufferCount = 1;
 		Submitinfo.pCommandBuffers = &CommandBuffers[ImageIndex]; // Command buffers(s) [array per RenderPass] to execute in this batch (submission)
 
-		VK_CHECK_RESULT(vkQueueSubmit(Queue, 1, &Submitinfo, QueueFences[ImageIndex]));
+		VK_CHECK_RESULT(vkQueueSubmit(Queue, 1, &Submitinfo, VK_NULL_HANDLE));
 
 		VkPresentInfoKHR presentInfo = {};
 		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;

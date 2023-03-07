@@ -19,22 +19,26 @@ namespace Spaceng
 	{
 	public:
 		~VulkanRenderer();
-		void InitRenderer(std::vector<const char*> EnabledInstanceextensions, std::vector<const char*> EnabledDeviceextensions,
+		void InitExtensions(std::vector<const char*> EnabledInstanceextensions, std::vector<const char*> EnabledDeviceextensions,
 			VkPhysicalDeviceFeatures EnableddeviceFeatures);
-
+		void InitRenderer();
 		void CreateInstance();
 		void CreateDevice();
-		void SetupDepthBuffer();
+		void SetupDepthStencil();
 		void CreatePipelineCache();
 		void CreateSemaphores();
 		void SetupFunctionPtr();
+		void getSupportedDepth();
+		void SubmitInformation();
+		void SetupRenderPass();
 
 
 
-		void CreateDisplayPrimitives(GLFWwindow* Window);
+		void CreateSurfacePrimitives(GLFWwindow* Window);
 		void CreateDisplayTemplate(uint32_t* width, uint32_t* height, bool vsync);
 
-		void prepareUniformBuffer(VkGLTFAsset* Asset, bool mapAccess = true, bool descriptorAcess = true);
+		void setView();
+		void prepareUniformBuffer(VkGLTFAsset* Asset, bool mapAccess, bool descriptorAcess = true);
 		void updateUniformBuffer(VkGLTFAsset* Asset);
 		void prepareDescriptors(VkGLTFAsset* Asset);
 		void UpdateDescriptorSet(VkGLTFAsset* Asset , bool updateUniform = true , bool updateTexture = true);
@@ -80,6 +84,8 @@ namespace Spaceng
 
 		 //Device
 		 VkDevice Device;
+		 //memory
+		 VulkanBufferMemory* MemoryHandle;
 
 		 //Queue
 		 VkQueue Queue;
@@ -105,6 +111,11 @@ namespace Spaceng
 		 bool SurfaceVsync = false;
 		 uint32_t SurfaceHeight =0;
 		 uint32_t SurfaceWidth = 0;
+		 glm::mat4 projectionMatrix;
+		 glm::mat4 viewMatrix;
+		 glm::mat4 modelMatrix;
+		 glm::vec3 CameraPosition;
+
 
 		 VkSwapchainKHR Swapchain = VK_NULL_HANDLE;
 		 typedef struct _SwapChainBuffers {
@@ -115,28 +126,37 @@ namespace Spaceng
 		 std::vector<VkImage> RetrievedImages;
 		 uint32_t ImageCount= 0;
 
-		 //Shader
-		 std::vector<VkShaderModule> ShaderModules;
-
 		 //Pipeline
 		 VkPipelineCache PipelineCache;
 
+		 //Shader
+		 std::vector<VkShaderModule> ShaderModules;
+		 VkPipelineStageFlags submitPipelineStages = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+
 		 //Submit
 		 VkSubmitInfo Submitinfo;
-		 VkPipelineStageFlags submitPipelineStages = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
 		 //Renderpass
 		 VkRenderPass Renderpass =VK_NULL_HANDLE;
+		 //Depth
+		 VkFormat DepthFormat;
+		 struct {
+			 VkImage image;
+			 VkDeviceMemory memory;
+			 VkImageView view;
+		 } DepthStencil;
 
 		 //Framebuffer
 		 std::vector<VkFramebuffer> FrameBuffer;
+		 //Semaphores
+		 VkSemaphore DelayBeforeCommandExecution;
+		 VkSemaphore CommandExecutionComplete;
+
 
 		 //Fense
 		 std::vector<VkFence> QueueFences;
 
-		 //Semaphores
-		 VkSemaphore DelayBeforeCommandExecution;
-		 VkSemaphore CommandExecutionComplete;
 
 
 		 //Cmd
@@ -149,11 +169,11 @@ namespace Spaceng
 		 PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR fpGetPhysicalDeviceSurfaceCapabilitiesKHR = VK_NULL_HANDLE;
 		 PFN_vkGetPhysicalDeviceSurfaceFormatsKHR fpGetPhysicalDeviceSurfaceFormatsKHR = VK_NULL_HANDLE;
 		 PFN_vkGetPhysicalDeviceSurfacePresentModesKHR fpGetPhysicalDeviceSurfacePresentModesKHR = VK_NULL_HANDLE;
+		 PFN_vkQueuePresentKHR fpQueuePresentKHR = VK_NULL_HANDLE;
 		 PFN_vkCreateSwapchainKHR fpCreateSwapchainKHR = VK_NULL_HANDLE;
 		 PFN_vkDestroySwapchainKHR fpDestroySwapchainKHR = VK_NULL_HANDLE;
 		 PFN_vkGetSwapchainImagesKHR fpGetSwapchainImagesKHR = VK_NULL_HANDLE;
 		 PFN_vkAcquireNextImageKHR fpAcquireNextImageKHR = VK_NULL_HANDLE;
-		 PFN_vkQueuePresentKHR fpQueuePresentKHR = VK_NULL_HANDLE;
 		
 	};
 

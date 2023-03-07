@@ -80,8 +80,6 @@ namespace Spaceng {
 		};
 		VkPhysicalDeviceFeatures enabledDeviceFeatures{};
 		
-
-		
 	};
 
 	//implemented in client

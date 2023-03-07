@@ -1,8 +1,6 @@
 #include "PCH.h"
 #include "Application.h"
 
-
-
 namespace Spaceng {
 
 
@@ -16,9 +14,12 @@ namespace Spaceng {
 		SE_ASSERT(m_AppWindow, "Window could not be created");
 
 		m_Renderer = new VulkanRenderer();
-		m_Renderer->InitRenderer(
+
+		m_Renderer->InitExtensions(
 			EnabledInstanceextensions, enabledDeviceExtensions, enabledDeviceFeatures);
-		m_AppWindow->InitWindow(m_Renderer); //initial Surface
+		
+		m_Renderer->InitRenderer();
+		m_AppWindow->InitWindow(m_Renderer); 
 		
 
 
@@ -31,6 +32,7 @@ namespace Spaceng {
 
 	Application::~Application()
 	{
+		
 		for (Layer* layer : m_LayerStack)
 		{
 			layer->OnDetach();
@@ -91,7 +93,8 @@ namespace Spaceng {
 					layer->OnUpdate(m_Timestep);
 
 			//if camera.ismoving()    ´==> UpdateUniformBuffers();
-				//Render();
+				m_Renderer->setView();
+				Render();
 
 			}
 			m_Timestep = (float)glfwGetTime() - m_lastframetime;
