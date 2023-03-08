@@ -16,11 +16,6 @@
 [submodule "Spaceng/Dependency/tinygltf"]
 	path = Spaceng/Dependency/tinygltf
 	url = https://github.com/syoyo/tinygltf
-[submodule "Spaceng/Dependency/asio"]
-	path = Spaceng/Dependency/asio
+[submodule "Spaceng/Dependency/Asio_"]
+	path = Spaceng/Dependency/Asio_
 	url = https://github.com/chriskohlhoff/asio
-
-
-
-
-
