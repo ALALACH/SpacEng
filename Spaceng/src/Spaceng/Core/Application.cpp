@@ -56,14 +56,14 @@ namespace Spaceng {
 		VkGLTFAsset* Asset = new VkGLTFAsset(name , type , DepthStencil, filepath);
 		m_Renderer->PrepareAsset(Asset ,type , filepath);
 		m_Assets.push_back(Asset);
-		SE_LOG_DEBUG("Asset - {0}- Loaded", Asset->getName());
+		SE_LOG_WARN("Asset - {0}- Loaded", Asset->getName());
 		Asset_Nr_Changed = true;
 	}
 
 	void Application::DestroyAsset(VkGLTFAsset* Asset)
 	{
 		m_Renderer->CleanUpAsset(Asset);
-		SE_LOG_DEBUG("Asset - {0} - removed", Asset->getName());
+		SE_LOG_WARN("Asset - {0} - removed", Asset->getName());
 		std::erase(m_Assets, Asset);
 		delete Asset;
 		Asset = nullptr;

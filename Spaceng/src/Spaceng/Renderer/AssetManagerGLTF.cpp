@@ -94,7 +94,7 @@ namespace Spaceng
 
 		int stb_width, stb_height, stb_channels;
 		void* ImgData =stbi_load(filename.c_str(), &stb_width, &stb_height, &stb_channels, 4);
-		SE_LOG_DEBUG("Loading Texture: {0}", filename.c_str())
+		SE_LOG_WARN("Loading Texture: {0}", filename.c_str())
 		SE_ASSERT(ImgData, "Could not load Texture File.");
 		uint64_t ImgSize = stb_width * stb_height * 4;
 		

@@ -14,5 +14,9 @@
 #include "Spaceng/src/Spaceng/Renderer/VulkanRenderer.h"
 #include "Spaceng/src/Spaceng/Renderer/AssetManagerGLTF.h"
 #include "Spaceng/src/Spaceng/Renderer/VulkanMemory.h"
+
 //Overlay
-#include "Imgui/imgui.h"
+#include "Spaceng/src/Spaceng/GUI/ImGuiLayer.h"
+
+//Network
+#include "Spaceng/src/Spaceng/Networking/Networking.h"

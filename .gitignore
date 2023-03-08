@@ -10,8 +10,6 @@ bin-int/
 **.vcxproj.filters
 **.vcxproj.user
 **.csproj
-/Spaceng/Dependency/ktx
-/App/assets/Textures/Screen.jpg
 /App/assets/Shaders/texture.frag
 /App/assets/Shaders/texture.vert
 *.jpg
