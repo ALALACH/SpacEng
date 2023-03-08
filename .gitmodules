@@ -7,9 +7,7 @@
 [submodule "Spaceng/Dependency/glfw"]
 	path = Spaceng/Dependency/glfw
 	url = https://github.com/ALALACH/glfw_premake
-[submodule "Spaceng/Dependency/asio"]
-	path = Spaceng/Dependency/asio
-	url = https://github.com/chriskohlhoff/asio
+
 [submodule "Spaceng/Dependency/optick"]
 	path = Spaceng/Dependency/optick
 	url = https://github.com/bombomby/optick
