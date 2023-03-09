@@ -54,7 +54,7 @@ namespace Spaceng {
 	void Application::PrepareAsset(std::string name ,AssetType type,std::string filepath, bool DepthStencil)
 	{
 		VkGLTFAsset* Asset = new VkGLTFAsset(name , type , DepthStencil, filepath);
-		m_Renderer->PrepareAsset(Asset ,type , filepath);
+		m_Renderer->PrepareAsset(Asset ,type);
 		m_Assets.push_back(Asset);
 		SE_LOG_WARN("Asset - {0}- Loaded", Asset->getName());
 		Asset_Nr_Changed = true;
@@ -63,8 +63,8 @@ namespace Spaceng {
 	void Application::DestroyAsset(VkGLTFAsset* Asset)
 	{
 		m_Renderer->CleanUpAsset(Asset);
-		SE_LOG_WARN("Asset - {0} - removed", Asset->getName());
 		std::erase(m_Assets, Asset);
+		SE_LOG_WARN("Asset - {0} - removed", Asset->getName());
 		delete Asset;
 		Asset = nullptr;
 		Asset_Nr_Changed = true;
@@ -142,7 +142,20 @@ namespace Spaceng {
 		case Key::C:
 			m_AppWindow->SetToFullScreen();
 			break;
+		case Key::F:
+			NET::test();
+			textureIndexDebugging++;
+			m_Renderer->RefreshTexture(m_Assets[0], textureIndexDebugging);
+			m_Renderer->RecordCommandBuffers(&m_Assets);
+			break;
+		case Key::D:
+			NET::test();
+			textureIndexDebugging--;
+			m_Renderer->RefreshTexture(m_Assets[0], textureIndexDebugging);
+			m_Renderer->RecordCommandBuffers(&m_Assets);
+			break;
 		}
+
 		return false;
 	}
 

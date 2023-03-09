@@ -1,5 +1,14 @@
 #pragma once
-#include "boost/asio.hpp"
+#include "Asio_/asio/include/asio.hpp"
+
+namespace Spaceng
+{
+	class NET
+	{
+	public:
+		static void test();
+	};
+}
 
 
 

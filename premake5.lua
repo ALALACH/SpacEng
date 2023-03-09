@@ -32,7 +32,7 @@ IncludeDir["VulkanSDK"] = "%{VULKAN_SDK}/Include"
 IncludeDir["optick"] = "Spaceng/Dependency/optick"
 IncludeDir["Tinygltf"] = "Spaceng/Dependency/Tinygltf"
 IncludeDir["glm"] = "Spaceng/Dependency/glm"
-IncludeDir["asio"] = "Spaceng/Dependency/asio/include"
+IncludeDir["asio"] = "Spaceng/Dependency/Asio_/asio/include"
 
 
 LibraryDir = {}
@@ -76,7 +76,6 @@ project "Spaceng"
 		"%{IncludeDir.optick}",
 		"%{IncludeDir.asio}",
 		"%{IncludeDir.Tinygltf}",
-		"%{IncludeDir.ktx}",
 		"%{IncludeDir.Vulkan}",
 		"%{IncludeDir.VulkanSDK}",
 		"%{IncludeDir.VulkanSDK_LocalInclude}",
@@ -105,7 +104,8 @@ project "Spaceng"
 	{ 
 		"_NO_DEBUG_HEAP=1",
 		"SE_PLATFORM_WIN",
-		"_CRT_SECURE_NO_WARNINGS"
+		"_CRT_SECURE_NO_WARNINGS",
+		"_WIN32_WINNT=0x0601"
 	}
 
 	filter "configurations:Debug"

@@ -41,12 +41,13 @@ namespace Spaceng
 		void prepareUniformBuffer(VkGLTFAsset* Asset, bool mapAccess, bool descriptorAcess = true);
 		void updateUniformBuffer(VkGLTFAsset* Asset);
 		void prepareDescriptors(VkGLTFAsset* Asset);
-		void UpdateDescriptorSet(VkGLTFAsset* Asset , bool updateUniform = true , bool updateTexture = true);
+		void UpdateDescriptorSet(VkGLTFAsset* Asset ,bool updateUniform = true , bool updateTexture = true );
 		void preparePipeline(VkGLTFAsset* Asset);
 
 
 
-		void PrepareAsset(VkGLTFAsset* Asset ,AssetType Type , std::string filename);
+		void PrepareAsset(VkGLTFAsset* Asset ,AssetType Type);
+		void RefreshTexture(VkGLTFAsset* Asset, uint32_t index);
 		void CleanUpAsset(VkGLTFAsset* Asset);
 
 

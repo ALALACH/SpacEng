@@ -24,9 +24,10 @@ namespace Spaceng
 
 	}
 
+
 	VkGLTFAsset::VkGLTFAsset(std::string name ,AssetType type, bool DepthStencil, std::string filepath)
 	{
-
+		Filepath = filepath;
 		Name = name;
 		Type = type;
 		if (DepthStencil) { DepthStencilEnabled = true; }
@@ -40,7 +41,6 @@ namespace Spaceng
 	VkGLTFAsset::~VkGLTFAsset() 
 	{
 	}
-
 
 	void Model::LoadFromFile(VkDevice* Device, VkPhysicalDevice* PhysicalDevice ,std::string filename)
 	{
@@ -91,7 +91,7 @@ namespace Spaceng
 	void Texture::loadFromFile(std::string filename, VkFormat format, VkDevice* Device,VkPhysicalDevice* PhysicalDevice, VkCommandPool pool, VkQueue copyQueue,
 		VkImageUsageFlags imageUsageFlags, VkImageLayout ImageLayout, bool linear,bool EnabledMip)
 	{
-
+		DebugName = filename.c_str();
 		int stb_width, stb_height, stb_channels;
 		void* ImgData =stbi_load(filename.c_str(), &stb_width, &stb_height, &stb_channels, 4);
 		SE_LOG_WARN("Loading Texture: {0}", filename.c_str())
@@ -157,7 +157,7 @@ namespace Spaceng
 			//Host-Access
 			void* data;
 			VK_CHECK_RESULT(vkMapMemory(*Device, memory, 0, memReqs.size, 0, &data));
-		    memcpy(data, ImgData, ImgSize);      // needed for buffer copying or transfer purposes inside the Application
+		    memcpy(data, ImgData, ImgSize);      
 			vkUnmapMemory(*Device, memory);
 
 			// Setup buffer copy regions for each mip level and miplvl 0 [Full Resolution]
@@ -461,24 +461,49 @@ namespace Spaceng
 
 		//todo : Generate Mips using VkCmdBlitImage();
 	}
-
+	
 	void Texture::LoadfromglTfImage(tinygltf::Image& gltfimage, std::string path, VkDevice* device, VkPhysicalDevice* PhysicalDevice, VkQueue copyQueue)
 	{
 
 	}
+	Texture& Texture::operator=(const Texture& Other)
+	{
+		SE_ASSERT(this != &Other, "loading the same Texture");
+		//note : this is a pointer copy so both pointers point to the same image 
+		//note : any changes to any of the objects will affect the image 
+		this->height = Other.height;
+		this->width = Other.width;
+		this->image = Other.image;
+		this->sampler = Other.sampler;
+		this->view = Other.view;
+		this->mipLevels = Other.mipLevels;
+		this->imagedeviceMemory= Other.imagedeviceMemory;
+		this->TextureDescriptor = Other.TextureDescriptor;
+		this->DebugName = Other.DebugName;
+
+		return *this;
+	}
 
 	void Texture::Destroy(VkDevice* Device)
 	{
+		height = NULL;
+		width = NULL;
+		mipLevels = NULL;
 		vkDestroyImageView(*Device, view, nullptr);
+		view = VK_NULL_HANDLE;
 		vkDestroyImage(*Device, image, nullptr);
+		image = VK_NULL_HANDLE;
 		if (sampler)
 		{
 			vkDestroySampler(*Device, sampler, nullptr);
+			sampler = VK_NULL_HANDLE;
 		}
 		TextureDescriptor.sampler = VK_NULL_HANDLE;
 		TextureDescriptor.imageView = VK_NULL_HANDLE;
 		TextureDescriptor.imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		vkFreeMemory(*Device, imagedeviceMemory, nullptr);
+		imagedeviceMemory = VK_NULL_HANDLE;
+		SE_LOG_WARN("Removing Texture: {0}", this->DebugName);
 	}
 
 }

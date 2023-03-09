@@ -5,6 +5,7 @@
 #include "Spaceng/Renderer/VulkanRenderer.h"
 
 
+
 namespace Spaceng {
 
 	using EventCallbackFn = std::function<void(Event&)>;

@@ -1,9 +1,4 @@
 #pragma once
-
-#ifdef SE_PLATFORM_WIN
-#include <Windows.h>
-#endif
-
 #include <memory>
 #include <iostream>
 #include <fstream>
@@ -19,4 +14,5 @@
 #include <locale>
 #include <codecvt>
 #include <cstdlib>
+
 

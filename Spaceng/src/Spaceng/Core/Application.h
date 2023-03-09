@@ -3,11 +3,11 @@
 #include "Core.h"
 #include "LayerStack.h"
 #include "Event.h"
-
 #include "Spaceng/Window/Window.h"
 #include <glfw/include/GLFW/glfw3.h>
 
 #include "Spaceng/Renderer/VulkanRenderer.h"
+#include "Spaceng/Networking/Networking.h"
 
 #include "Spaceng/GUI/ImGuiLayer.h"
 
@@ -66,6 +66,7 @@ namespace Spaceng {
 		bool m_Running = true;
 		bool m_Minimized = false;
 		bool Asset_Nr_Changed = false;
+		uint32_t textureIndexDebugging=0;
 		float m_Timestep=0.0f, m_lastframetime=0.0f;
 
 

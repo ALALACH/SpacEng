@@ -12,6 +12,7 @@ namespace Spaceng
 			for (uint32_t i = 0; i < ImageCount; i++)
 			{
 				vkDestroyImageView(Device, SwapChainImageViewBufffer[i].imageview, nullptr);
+				SwapChainImageViewBufffer[i].imageview = VK_NULL_HANDLE;
 			}
 		}
 		if (Surface != VK_NULL_HANDLE)
@@ -24,36 +25,49 @@ namespace Spaceng
 
 		vkFreeCommandBuffers(Device, Commandpool, static_cast<uint32_t>(CommandBuffers.size()), CommandBuffers.data());
 		vkDestroyCommandPool(Device, Commandpool, nullptr);
+		Commandpool = VK_NULL_HANDLE;
 
 		for (uint32_t i = 0; i < FrameBuffer.size(); i++)
 		{
 			vkDestroyFramebuffer(Device, FrameBuffer[i], nullptr);
+			FrameBuffer[i] = VK_NULL_HANDLE;
 		}
 
 		if (Renderpass != VK_NULL_HANDLE)
 		{
 			vkDestroyRenderPass(Device, Renderpass, nullptr);
+			Renderpass = VK_NULL_HANDLE;
 		}
 
 		vkDestroyImageView(Device, DepthStencil.view, nullptr);
+		DepthStencil.view = VK_NULL_HANDLE;
 		vkDestroyImage(Device, DepthStencil.image, nullptr);
+		DepthStencil.image = VK_NULL_HANDLE; 
 		vkFreeMemory(Device, DepthStencil.memory, nullptr);
+		DepthStencil.memory = VK_NULL_HANDLE;
 
 		for (auto& shaderModule : ShaderModules)
 		{
 			vkDestroyShaderModule(Device, shaderModule, nullptr);
+			shaderModule = VK_NULL_HANDLE;
 		}
 
 		vkDestroyPipelineCache(Device, PipelineCache, nullptr);
+		PipelineCache = VK_NULL_HANDLE;
 
 		vkDestroySemaphore(Device, DelayBeforeCommandExecution, nullptr);
+		DelayBeforeCommandExecution = VK_NULL_HANDLE;
 		vkDestroySemaphore(Device, CommandExecutionComplete, nullptr);
+		CommandExecutionComplete = VK_NULL_HANDLE;
 		for (auto& fence : QueueFences) {
 			vkDestroyFence(Device, fence, nullptr);
+			fence = VK_NULL_HANDLE;
 		}
 
 		vkDestroyDevice(Device, nullptr);
+		Device = VK_NULL_HANDLE;
 		vkDestroyInstance(Instance, nullptr);
+		Instance = VK_NULL_HANDLE;
 	};
 
 
@@ -627,7 +641,7 @@ namespace Spaceng
 		VkCommandPoolCreateInfo CommandPoolCI = {};
 		CommandPoolCI.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 		CommandPoolCI.queueFamilyIndex = queueNodeIndex;
-		CommandPoolCI.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+		CommandPoolCI.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 		VK_CHECK_RESULT(vkCreateCommandPool(Device, &CommandPoolCI, nullptr, &Commandpool));
 
 		
@@ -834,7 +848,7 @@ namespace Spaceng
 		VkCommandBufferAllocateInfo CommandbufferAllocateInfo = {};
 		CommandbufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 		CommandbufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		CommandbufferAllocateInfo.commandBufferCount = CommandBuffers.size();
+		CommandbufferAllocateInfo.commandBufferCount = static_cast<uint32_t>(CommandBuffers.size());
 		CommandbufferAllocateInfo.commandPool = Commandpool;
 		VK_CHECK_RESULT(vkAllocateCommandBuffers(Device, &CommandbufferAllocateInfo, CommandBuffers.data()));
 	
@@ -861,7 +875,7 @@ namespace Spaceng
 		float aspectRatio = 0;
 		if (SurfaceWidth && SurfaceHeight)
 		{
-			aspectRatio = SurfaceWidth / SurfaceHeight;
+			aspectRatio = (float) (SurfaceWidth / SurfaceHeight);
 		}
 		float fieldOfView = 45.0f;
 		float nearPlane = 0.1f;
@@ -987,7 +1001,7 @@ namespace Spaceng
 			writeDescriptorSet2.descriptorCount = 1;
 			Asset->writeDescriptorSets.push_back(writeDescriptorSet2);
 		}
-		vkUpdateDescriptorSets(Device, Asset->writeDescriptorSets.size(), Asset->writeDescriptorSets.data(), 0, NULL);
+		vkUpdateDescriptorSets(Device, static_cast<uint32_t>(Asset->writeDescriptorSets.size()), Asset->writeDescriptorSets.data(), 0, NULL);
 	}
 
 	void VulkanRenderer::preparePipeline(VkGLTFAsset* Asset)
@@ -1145,16 +1159,16 @@ namespace Spaceng
 	}
 
 
-	void VulkanRenderer::PrepareAsset(VkGLTFAsset* Asset, AssetType Type , std::string filepath)
+	void VulkanRenderer::PrepareAsset(VkGLTFAsset* Asset, AssetType Type)
 	{
 		if (Type == model_type)
 		{
-			std::string Modelfilepath = filepath + "\\assets\\Models\\" + Asset->getName() + ".gltf"; //change format accordingly
+			std::string Modelfilepath = Asset->Filepath + "\\assets\\Models\\" + Asset->getName() + ".gltf"; 
 			Asset->AssetModel.LoadFromFile(&Device, &PhysicalDevice , Modelfilepath);
 		}
 		else if (Type == texture_On_Screen)
 		{
-			std::string Texturefilepath = filepath + "\\assets\\Textures\\" + Asset->getName() + ".png"; //change format accordingly
+			std::string Texturefilepath = Asset->Filepath + "\\assets\\Textures\\" + Asset->getName() + ".png"; 
 			Asset->AssetTexture.loadFromFile(Texturefilepath, VK_FORMAT_R8G8B8A8_UNORM, &Device, &PhysicalDevice, Commandpool, Queue);
 			Asset->AssetModel.generateQuad(&Device, &PhysicalDevice);
 			prepareUniformBuffer(Asset,true);
@@ -1162,30 +1176,53 @@ namespace Spaceng
 			preparePipeline(Asset);
 		}
 	}
+	void VulkanRenderer::RefreshTexture(VkGLTFAsset* Asset, uint32_t index)
+	{
+		std::string Texturefilepath = Asset->Filepath + "\\assets\\Textures\\" + Asset->getName() + std::to_string(index)+ ".jpg"; 
+		vkDeviceWaitIdle(Device);
+		Asset->AssetTexture.Destroy(&Device);
+		Asset->AssetTexture.loadFromFile(Texturefilepath, VK_FORMAT_R8G8B8A8_UNORM, &Device, &PhysicalDevice, Commandpool, Queue);
+		Asset->writeDescriptorSets.pop_back();
+		UpdateDescriptorSet(Asset,false);
+		vkDeviceWaitIdle(Device);
+	}
 
 	void VulkanRenderer::CleanUpAsset(VkGLTFAsset* Asset)
 	{
 		cleanUpBuffer(&Device, &Asset->UniformBuffer); //UB
 		Asset->writeDescriptorSets.clear();
 		vkFreeDescriptorSets(Device, Asset->DescriptorPool, 1, &Asset->DescriptorSet);
+		Asset->DescriptorSet = VK_NULL_HANDLE;
 		vkDestroyDescriptorPool(Device, Asset->DescriptorPool, nullptr);
+		Asset->DescriptorPool = VK_NULL_HANDLE;
 		vkDestroyPipeline(Device, Asset->Pipeline, nullptr);
+		Asset->Pipeline = VK_NULL_HANDLE;
 		vkDestroyPipelineLayout(Device, Asset->PipelineLayout, nullptr);
+		Asset->PipelineLayout = VK_NULL_HANDLE;
 		vkDestroyDescriptorSetLayout(Device, Asset->DescriptorSetLayout, nullptr);
+		Asset->DescriptorSetLayout = VK_NULL_HANDLE;
 		Asset->AssetTexture.Destroy(&Device);  //debatable because of the so many textures
 		cleanUpBuffer(&Device, &Asset->AssetModel.VertexBuffer);
 		cleanUpBuffer(&Device, &Asset->AssetModel.IndexBuffer);
-
-
+		Asset->AssetModel.Index_ = NULL;
 		//todo : clean up model / texture variables ... ongoing process
 	}
 
 
 	void VulkanRenderer::cleanUpBuffer(VkDevice* Device, Buffer* buffer)
 	{
-		vkDestroyBuffer(*Device, buffer->buffer, nullptr);
 		VulkanBufferMemory::DeallocateBufferMemory(Device, buffer);
+		vkDestroyBuffer(*Device, buffer->buffer, nullptr);
+		if (buffer->BufferDescriptor.buffer)
+		{
+			buffer->BufferDescriptor.range = NULL;
+			buffer->BufferDescriptor.buffer = VK_NULL_HANDLE;
+		}
 		buffer->buffer = VK_NULL_HANDLE;
+		buffer->usageflags = NULL;
+		buffer->size = NULL;
+		buffer->MemoryPropertyflags = NULL;
+
 	}
 
 
@@ -1340,14 +1377,15 @@ namespace Spaceng
 			presentInfo.waitSemaphoreCount = 1;
 		}
 		result = fpQueuePresentKHR(Queue, &presentInfo);
+
 		if ((result == VK_ERROR_OUT_OF_DATE_KHR) || (result == VK_SUBOPTIMAL_KHR))
 		{
-			GenerateDisplay(&SurfaceWidth, &SurfaceHeight, SurfaceVsync, Assets);
 
 			if (result == VK_ERROR_OUT_OF_DATE_KHR)
 			{
-				return;
+				GenerateDisplay(&SurfaceWidth, &SurfaceHeight, SurfaceVsync, Assets);
 			}
+			return;
 		}
 		else 
 		{

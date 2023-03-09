@@ -77,8 +77,11 @@ namespace Spaceng
 	void VulkanBufferMemory::DeallocateBufferMemory(VkDevice* Device, Buffer* buffer)
 	{
 		if (buffer->mapped)
+		{
 			vkUnmapMemory(*Device, buffer->memory);
+		}
 		vkFreeMemory(*Device, buffer->memory, nullptr);
+		buffer->memory = VK_NULL_HANDLE;
 		//VK_SPEC : If a memory object is mapped at the time it is freed, it is implicitly unmapped.
 	}
 

@@ -30,6 +30,7 @@ namespace Spaceng
 	public:
 		Texture();
 		~Texture();
+		Texture& operator=(const Texture& Other);
 
 		void LoadfromglTfImage(tinygltf::Image& gltfimage, std::string path, VkDevice* device, VkPhysicalDevice* PhysicalDevice, VkQueue copyQueue);
 		void LoadfromOpenCVBuffer();
@@ -47,6 +48,7 @@ namespace Spaceng
 		uint32_t mipLevels = 0;
 		VkSampler sampler = VK_NULL_HANDLE;
 		VkDescriptorImageInfo TextureDescriptor;
+		std::string DebugName;
 	};
 
 
@@ -99,6 +101,7 @@ namespace Spaceng
 
 		bool DepthStencilEnabled = false;
 
+		std::string Filepath;
 		std::string VertexShaderFile ;
 		std::string FragmentShaderFile ;
 
