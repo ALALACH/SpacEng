@@ -37,7 +37,7 @@ namespace Spaceng {
 		virtual void ShutDownWin() = 0;
 
 		virtual void InitWindow(VulkanRenderer* Renderer) {};
-		virtual void PollEvents(float Timestep) = 0;
+		virtual void PollEvents() = 0;
 
 		virtual std::pair<uint32_t, uint32_t> GetSize() const = 0;
 		virtual std::pair<int, int> GetPos() const = 0;

@@ -83,7 +83,7 @@ namespace Spaceng
 		SetupFunctionPtr();
 		CreatePipelineCache();
 		CreateSemaphores();
-		SubmitInformation();
+		prepareQueueSubmit();
 	}
 
 	void VulkanRenderer::CreateInstance()
@@ -412,7 +412,7 @@ namespace Spaceng
 		}
 	}
 
-	void VulkanRenderer::SubmitInformation()
+	void VulkanRenderer::prepareQueueSubmit()
 	{
 		Submitinfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 		Submitinfo.pWaitDstStageMask = &submitPipelineStages;
@@ -1159,7 +1159,7 @@ namespace Spaceng
 	}
 
 
-	void VulkanRenderer::PrepareAsset(VkGLTFAsset* Asset, AssetType Type)
+	void VulkanRenderer::prepareAsset(VkGLTFAsset* Asset, AssetType Type)
 	{
 		if (Type == model_type)
 		{
@@ -1178,13 +1178,16 @@ namespace Spaceng
 	}
 	void VulkanRenderer::RefreshTexture(VkGLTFAsset* Asset, uint32_t index)
 	{
-		std::string Texturefilepath = Asset->Filepath + "\\assets\\Textures\\" + Asset->getName() + std::to_string(index)+ ".jpg"; 
-		vkDeviceWaitIdle(Device);
+		std::string Texturefilepath = Asset->Filepath + "\\assets\\Textures\\" + "ezgif-frame-0" + std::to_string(index) + ".jpg";
 		Asset->AssetTexture.Destroy(&Device);
+
 		Asset->AssetTexture.loadFromFile(Texturefilepath, VK_FORMAT_R8G8B8A8_UNORM, &Device, &PhysicalDevice, Commandpool, Queue);
+		//todo : Transfer Queue preparing images with std::Queue for rendering
+		//todo : if (Queue.size()) -> updatedescriptor(Queue.front()) 
+		//todo : pop() , Destroy..
+
 		Asset->writeDescriptorSets.pop_back();
 		UpdateDescriptorSet(Asset,false);
-		vkDeviceWaitIdle(Device);
 	}
 
 	void VulkanRenderer::CleanUpAsset(VkGLTFAsset* Asset)
@@ -1279,7 +1282,7 @@ namespace Spaceng
 		cmdBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
 		VkClearValue clearValues[2];
-		clearValues[0].color = { {1.0f, 0.44f, 0.44f, 1.0f } };
+		clearValues[0].color = { {0.25, 0.25, 0.25, 1.0f } };
 		clearValues[1].depthStencil = {1.0f, 0 };	
 
 		VkRenderPassBeginInfo renderPassBeginInfo{};
@@ -1317,11 +1320,7 @@ namespace Spaceng
 				vkCmdBindDescriptorSets(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, (*Assets)[j]->PipelineLayout, 0, 1, &(*Assets)[j]->DescriptorSet, 0, NULL);
 				vkCmdBindPipeline(CommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, (*Assets)[j]->Pipeline);
 
-				//(*Assets)[j]->AssetModel.Draw(CommandBuffers[i]); //to do : to be implemented ...ongoing process
-				VkDeviceSize offsets[1] = { 0 };
-				vkCmdBindVertexBuffers(CommandBuffers[i], Vertex_Binding_Index_0, 1, &(*Assets)[j]->AssetModel.VertexBuffer.buffer, offsets);
-				vkCmdBindIndexBuffer(CommandBuffers[i], (*Assets)[j]->AssetModel.IndexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
-				vkCmdDrawIndexed(CommandBuffers[i], (*Assets)[j]->AssetModel.Index_, 1, 0, 0, 0);
+				(*Assets)[j]->AssetModel.Draw(CommandBuffers[i]); //to do  : ongoing process
 			}
 			//todo: implement UI Command Recorder
 
@@ -1351,15 +1350,12 @@ namespace Spaceng
 		{
 			VK_CHECK_RESULT(result);
 		}
-		// Use a fence to wait until the Queue's command buffer has finished execution before using it again
-		//can use fence when Multiviewing /Multithreading: to insert a dependency from a queue to the host.
-		//VK_CHECK_RESULT(vkWaitForFences(Device, 1, &QueueFences[ImageIndex], VK_TRUE, UINT64_MAX));
-		//VK_CHECK_RESULT(vkResetFences(Device, 1, &QueueFences[ImageIndex]));
-		
-		Submitinfo.commandBufferCount = 1;
-		Submitinfo.pCommandBuffers = &CommandBuffers[ImageIndex]; // Command buffers(s) [array per RenderPass] to execute in this batch (submission)
 
-		VK_CHECK_RESULT(vkQueueSubmit(Queue, 1, &Submitinfo, VK_NULL_HANDLE));
+		Submitinfo.commandBufferCount = 1;
+		Submitinfo.pCommandBuffers = &CommandBuffers[ImageIndex]; 
+
+		VK_CHECK_RESULT(vkResetFences(Device, 1, &QueueFences[ImageIndex]));
+		VK_CHECK_RESULT(vkQueueSubmit(Queue, 1, &Submitinfo, QueueFences[ImageIndex]));
 
 		VkPresentInfoKHR presentInfo = {};
 		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -1367,9 +1363,7 @@ namespace Spaceng
 		presentInfo.swapchainCount = 1;
 		presentInfo.pSwapchains = &Swapchain;
 		presentInfo.pImageIndices = &ImageIndex;
-		// pImageIndices is a pointer to an array of indices into the array of each swapchain’s presentable images, with swapchainCount entries.
-		// Each entry in this array identifies the image to present on the corresponding entry in the pSwapchains array.
-		
+
 		// Check if a wait semaphore has been specified to wait for before presenting the image
 		if (CommandExecutionComplete != VK_NULL_HANDLE)
 		{
@@ -1377,6 +1371,7 @@ namespace Spaceng
 			presentInfo.waitSemaphoreCount = 1;
 		}
 		result = fpQueuePresentKHR(Queue, &presentInfo);
+		VK_CHECK_RESULT(vkWaitForFences(Device, 1, &QueueFences[ImageIndex], VK_TRUE, UINT64_MAX));
 
 		if ((result == VK_ERROR_OUT_OF_DATE_KHR) || (result == VK_SUBOPTIMAL_KHR))
 		{
@@ -1391,7 +1386,6 @@ namespace Spaceng
 		{
 			VK_CHECK_RESULT(result);
 		}
-		VK_CHECK_RESULT(vkQueueWaitIdle(Queue));
 	}
 
 

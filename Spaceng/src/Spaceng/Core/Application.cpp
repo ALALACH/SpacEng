@@ -27,12 +27,13 @@ namespace Spaceng {
 			m_AppWindow->SetEventCallback(SE_BIND_EVENT(Application::OnEvent));
 		SE_LOG_DEBUG("{}: EventCallback Enabled", m_AppWindow->GetTitle())
 			m_AppWindow->SetVsync(true); 
+
+		//Note :  Virtual OnInit(); Entrypoint
 	}
 
 
 	Application::~Application()
 	{
-		
 		for (Layer* layer : m_LayerStack)
 		{
 			layer->OnDetach();
@@ -54,8 +55,8 @@ namespace Spaceng {
 	void Application::PrepareAsset(std::string name ,AssetType type,std::string filepath, bool DepthStencil)
 	{
 		VkGLTFAsset* Asset = new VkGLTFAsset(name , type , DepthStencil, filepath);
-		m_Renderer->PrepareAsset(Asset ,type);
-		m_Assets.push_back(Asset);
+		m_Renderer->prepareAsset(Asset ,type);
+		m_Assets.emplace_back(Asset); //copy
 		SE_LOG_WARN("Asset - {0}- Loaded", Asset->getName());
 		Asset_Nr_Changed = true;
 	}
@@ -85,17 +86,20 @@ namespace Spaceng {
 	{
 		while (m_Running)
 		{
-			m_AppWindow->PollEvents(m_Timestep);
-
+			m_AppWindow->PollEvents();
 			if (!m_Minimized)
 			{ 
 				for (Layer* layer : m_LayerStack)
 					layer->OnUpdate(m_Timestep);
+				m_Renderer->setView(); 
 
-			//if camera.ismoving()    ´==> UpdateUniformBuffers();
-				m_Renderer->setView();
+				if (textureIndexDebugging==0 || textureIndexDebugging>50)
+					textureIndexDebugging = 1;
+
+				m_Renderer->RefreshTexture(m_Assets[0], textureIndexDebugging);
+				m_Renderer->RecordCommandBuffers(&m_Assets);
 				Render();
-
+				textureIndexDebugging++;
 			}
 			m_Timestep = (float)glfwGetTime() - m_lastframetime;
 			m_lastframetime = (float)glfwGetTime();	
@@ -133,6 +137,14 @@ namespace Spaceng {
 		uint32_t width = e.GetWidth(); //Assuming 1 Display per Window
 		uint32_t height = e.GetHeight();
 		m_Renderer->GenerateDisplay(&width,&height, m_AppWindow->GetVsync() , &m_Assets);
+		if (width == 0 && height == 0)
+		{
+			m_Minimized = true;
+		}
+		else
+		{
+			m_Minimized = false;
+		}
 		return true;
 	}
 	bool Application::OnKeyPressed(KeyPressedEvent& e)
@@ -143,16 +155,8 @@ namespace Spaceng {
 			m_AppWindow->SetToFullScreen();
 			break;
 		case Key::F:
-			NET::test();
-			textureIndexDebugging++;
-			m_Renderer->RefreshTexture(m_Assets[0], textureIndexDebugging);
-			m_Renderer->RecordCommandBuffers(&m_Assets);
 			break;
 		case Key::D:
-			NET::test();
-			textureIndexDebugging--;
-			m_Renderer->RefreshTexture(m_Assets[0], textureIndexDebugging);
-			m_Renderer->RecordCommandBuffers(&m_Assets);
 			break;
 		}
 
@@ -178,11 +182,7 @@ namespace Spaceng {
 
 	std::string Application::getProjectDirectory() 
 	{
-		TCHAR NPath[MAX_PATH];
-		GetCurrentDirectory(MAX_PATH, NPath);
-		std::wstring Path(NPath);
-		std::string Dir;
-		std::transform(Path.begin(), Path.end(), std::back_inserter(Dir), [](wchar_t c) {return (char)c; });
-		return Dir;
+		std::filesystem::path workingDirectory = std::filesystem::current_path();
+		return workingDirectory.string();
 	}
 }

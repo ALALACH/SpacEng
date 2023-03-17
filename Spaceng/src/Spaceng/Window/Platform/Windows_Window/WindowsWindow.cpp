@@ -127,6 +127,7 @@ namespace Spaceng {
 
 				MouseScrolledEvent event((float)xOffset, (float)yOffset);
 				data.EventCallback(event);
+				SE_LOG_DEBUG("MouseScrolled EventCallback")
 			});
 
 		glfwSetCursorPosCallback(m_Window, [](GLFWwindow* window, double XPOS, double YPOS)
@@ -135,6 +136,7 @@ namespace Spaceng {
 
 				MouseMovedEvent event((float)XPOS, (float)YPOS);
 				data.EventCallback(event);
+
 			});
 		
 	}
@@ -145,7 +147,7 @@ namespace Spaceng {
 		glfwDestroyWindow(m_Window);
 	}
 
-	void WindowsWindow::PollEvents(float Timestep)
+	void WindowsWindow::PollEvents()
 	{
 		glfwPollEvents();
 	}

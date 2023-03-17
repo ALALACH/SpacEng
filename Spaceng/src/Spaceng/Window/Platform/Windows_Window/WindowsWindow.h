@@ -29,7 +29,7 @@ namespace Spaceng {
 
 
 		virtual void InitWindow(VulkanRenderer* Renderer) override;
-		virtual void PollEvents(float Timestep) override;
+		virtual void PollEvents() override;
 
 		virtual std::pair<int, int> GetPos() const override;
 		virtual void SetPos(int Xpos, int Ypos) override;

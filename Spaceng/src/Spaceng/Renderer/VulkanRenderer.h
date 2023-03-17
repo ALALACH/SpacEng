@@ -29,7 +29,7 @@ namespace Spaceng
 		void CreateSemaphores();
 		void SetupFunctionPtr();
 		void getSupportedDepth();
-		void SubmitInformation();
+		void prepareQueueSubmit();
 		void SetupRenderPass();
 
 
@@ -46,7 +46,7 @@ namespace Spaceng
 
 
 
-		void PrepareAsset(VkGLTFAsset* Asset ,AssetType Type);
+		void prepareAsset(VkGLTFAsset* Asset ,AssetType Type);
 		void RefreshTexture(VkGLTFAsset* Asset, uint32_t index);
 		void CleanUpAsset(VkGLTFAsset* Asset);
 
