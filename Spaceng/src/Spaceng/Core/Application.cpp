@@ -8,6 +8,16 @@ namespace Spaceng {
 
 	Application::Application(const ApplicationSettings& Settings)
 	{
+
+		std::string IP = "localhost";
+		asio::io_context IO_context;
+		Myserver = new Server(IO_context, 1337);
+		//Myserver->Run();
+		Myclient = new Client(1337, IP);
+		Myclient->connect();
+		Myclient->SendData("Hello");
+		
+
 		s_Instance = this;
 		m_AppWindow = std::unique_ptr<Window>
 			(Window::Create(WindowSettings(Settings.Name, Settings.WindowWidth, Settings.WindowHeight, Settings.WindowPosx, Settings.WindowPosy)));
@@ -45,7 +55,8 @@ namespace Spaceng {
 		{
 			DestroyAsset(m_Assets[0]);
 		}
-
+		//delete Myserver;
+		//delete Myclient;
 		delete m_Renderer;
 		m_Renderer = nullptr;
 
@@ -56,7 +67,7 @@ namespace Spaceng {
 	{
 		VkGLTFAsset* Asset = new VkGLTFAsset(name , type , DepthStencil, filepath);
 		m_Renderer->prepareAsset(Asset ,type);
-		m_Assets.emplace_back(Asset); //copy
+		m_Assets.emplace_back(Asset); 
 		SE_LOG_WARN("Asset - {0}- Loaded", Asset->getName());
 		Asset_Nr_Changed = true;
 	}
@@ -84,6 +95,7 @@ namespace Spaceng {
 
 	void Application::Run()
 	{
+		OnInit();
 		while (m_Running)
 		{
 			m_AppWindow->PollEvents();
@@ -155,6 +167,7 @@ namespace Spaceng {
 			m_AppWindow->SetToFullScreen();
 			break;
 		case Key::F:
+			
 			break;
 		case Key::D:
 			break;

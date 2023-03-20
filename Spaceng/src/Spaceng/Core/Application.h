@@ -55,7 +55,8 @@ namespace Spaceng {
 		LayerStack m_LayerStack;
 		static Application* s_Instance;
 
-
+		Server* Myserver;
+		Client* Myclient;
 		VulkanRenderer* m_Renderer;
 		//the elements of an unordered_set are immutable  todo: separate dynamic and static assets
 		std::vector<VkGLTFAsset*> m_Assets;

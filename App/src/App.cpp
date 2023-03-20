@@ -14,8 +14,9 @@ public:
 
 	virtual void OnInit() override
 	{
-		EditorLayer* m_EditorLayer = new Spaceng::EditorLayer("EditorLayer");
+		EditorLayer* m_EditorLayer = new EditorLayer("EditorLayer");
 		PushLayer(m_EditorLayer);
+		
 	}	
 	
 	virtual void OnShutdown() override

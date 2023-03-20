@@ -17,7 +17,6 @@ namespace Spaceng
 	};
 	class VulkanBufferMemory
 	{
-
 	public:
 		 static VkResult ConstructBuffer(Buffer& Buffer, VkDeviceSize size, VkBufferUsageFlags usageflags, VkMemoryPropertyFlags MemoryPropertyflags, VkDevice Device,
 			VkPhysicalDevice* PhysicalDevice, bool descriptorAccess, bool mapAccess, void* data = nullptr);

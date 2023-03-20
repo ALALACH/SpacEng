@@ -22,7 +22,7 @@ namespace Spaceng
 	{
 		std::string AssetDirectoryPath= Application::Get().getProjectDirectory();
 		//Path for textures/Models/Shaders usw..
-		LoadAsset("Screen", texture_On_Screen, AssetDirectoryPath, true);
+		LoadAsset("Screen", Video, AssetDirectoryPath, true);
 
 	}
 

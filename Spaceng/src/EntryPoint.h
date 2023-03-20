@@ -9,7 +9,6 @@ extern Spaceng::Application* Spaceng::CreateApplication();
 		SE_LOG_INFO("init...")
 		// Project Specified Extern
 		Spaceng::Application* app = Spaceng::CreateApplication();
-		app->OnInit();
 		app->Run();
 		app->OnShutdown();
 		delete app;

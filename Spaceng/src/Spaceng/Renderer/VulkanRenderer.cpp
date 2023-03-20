@@ -1166,7 +1166,7 @@ namespace Spaceng
 			std::string Modelfilepath = Asset->Filepath + "\\assets\\Models\\" + Asset->getName() + ".gltf"; 
 			Asset->AssetModel.LoadFromFile(&Device, &PhysicalDevice , Modelfilepath);
 		}
-		else if (Type == texture_On_Screen)
+		else if (Type == Video)
 		{
 			std::string Texturefilepath = Asset->Filepath + "\\assets\\Textures\\" + Asset->getName() + ".png"; 
 			Asset->AssetTexture.loadFromFile(Texturefilepath, VK_FORMAT_R8G8B8A8_UNORM, &Device, &PhysicalDevice, Commandpool, Queue);
@@ -1181,12 +1181,14 @@ namespace Spaceng
 		std::string Texturefilepath = Asset->Filepath + "\\assets\\Textures\\" + "ezgif-frame-0" + std::to_string(index) + ".jpg";
 		Asset->AssetTexture.Destroy(&Device);
 
-		Asset->AssetTexture.loadFromFile(Texturefilepath, VK_FORMAT_R8G8B8A8_UNORM, &Device, &PhysicalDevice, Commandpool, Queue);
+		Asset->AssetTexture.loadFromFile(Texturefilepath, VK_FORMAT_R8G8B8A8_UNORM, &Device, &PhysicalDevice, Commandpool, Queue);  // Thread 1
 		//todo : Transfer Queue preparing images with std::Queue for rendering
-		//todo : if (Queue.size()) -> updatedescriptor(Queue.front()) 
-		//todo : pop() , Destroy..
 
-		Asset->writeDescriptorSets.pop_back();
+		std::queue<Texture> ImageQueue; //todo : Define in App
+
+		//todo : if (Queue.size()) -> updatedescriptor(Queue.front())    //Thread 2
+		//todo : pop() , Destroy..
+		Asset->writeDescriptorSets.pop_back();                
 		UpdateDescriptorSet(Asset,false);
 	}
 

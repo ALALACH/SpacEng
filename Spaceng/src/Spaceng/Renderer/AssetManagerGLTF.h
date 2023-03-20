@@ -18,7 +18,7 @@ namespace Spaceng
 
 	enum AssetType
 	{
-		texture_On_Screen,
+		Video,
 		model_type,
 		Simple_Mesh_type
 	};
@@ -33,10 +33,10 @@ namespace Spaceng
 		Texture& operator=(const Texture& Other);
 
 		void LoadfromglTfImage(tinygltf::Image& gltfimage, std::string path, VkDevice* device, VkPhysicalDevice* PhysicalDevice, VkQueue copyQueue);
-		void LoadfromOpenCVBuffer();
 		void loadFromFile(std::string filename, VkFormat format, VkDevice* Device, VkPhysicalDevice* PhysicalDevice, VkCommandPool pool, VkQueue copyQueue,
 			VkImageUsageFlags imageUsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT,
 			VkImageLayout ImageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL , bool linear = false , bool EnabledMip = false);
+		void LoadFrom_RGBA_Buffer();
 
 		void Destroy(VkDevice* Device);
 

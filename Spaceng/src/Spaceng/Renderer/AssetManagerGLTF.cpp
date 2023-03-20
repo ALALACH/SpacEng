@@ -462,6 +462,10 @@ namespace Spaceng
 		//todo : Generate Mips using VkCmdBlitImage();
 	}
 	
+	void Texture::LoadFrom_RGBA_Buffer()
+	{
+
+	}
 	void Texture::LoadfromglTfImage(tinygltf::Image& gltfimage, std::string path, VkDevice* device, VkPhysicalDevice* PhysicalDevice, VkQueue copyQueue)
 	{
 
