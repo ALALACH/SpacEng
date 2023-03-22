@@ -5,17 +5,19 @@
 namespace Spaceng
 {
 	Client::Client(uint32_t Port, std::string& Adress)
-		:Socket(io_context)
+		:Client_Socket(io_context)
 	{
 		asio::ip::tcp::resolver resolver (io_context);
 		endpoints = resolver.resolve(Adress, std::to_string(Port));
 	}
 	void Client::connect()
 	{
-		asio::async_connect(Socket, endpoints, [this](asio::error_code ec, asio::ip::tcp::endpoint ep) {
-			if (!ec)
+		asio::async_connect(Client_Socket, endpoints, [this](asio::error_code er, asio::ip::tcp::endpoint ep) {
+			if (!er)
 			{
-				SE_LOG_INFO("Connected to server!");
+				std::srand(static_cast<unsigned int>(std::time(nullptr)));
+				uint32_t random_num = std::rand() % 100;
+				SE_LOG_INFO("Client {0} Connected to server!",random_num);
 			}
 			else
 			{
@@ -30,12 +32,11 @@ namespace Spaceng
 		std::ostream os(&buf);
 		os.write(reinterpret_cast<const char*>(buffer.c_str()), sizeof(buffer));
 
-		asio::async_write(Socket,buf, [&](asio::error_code ec, size_t bytesTransferred) {
-			if (ec)
+		asio::async_write(Client_Socket,buf, [&](asio::error_code er, std::size_t bytesTransferred) {
+			if (er)
 			{
-				Socket.close(ec);
-				SE_LOG_ERROR("couldn't send data packet");
-				std::cout << ec << std::endl;
+				Client_Socket.close(er);
+				SE_LOG_ERROR("couldn't send data packet: {0}",er.message());
 				return;
 			}
 

@@ -8,17 +8,19 @@ namespace Spaceng {
 
 	Application::Application(const ApplicationSettings& Settings)
 	{
+		s_Instance = this;
 
 		std::string IP = "localhost";
-		asio::io_context IO_context;
-		Myserver = new Server(IO_context, 1337);
-		//Myserver->Run();
-		Myclient = new Client(1337, IP);
+		Myserver = new Server(1338);
+		Myserver->_Run();
+		
+		Myclient = new Client(1338, IP);
 		Myclient->connect();
+		
+
 		Myclient->SendData("Hello");
 		
 
-		s_Instance = this;
 		m_AppWindow = std::unique_ptr<Window>
 			(Window::Create(WindowSettings(Settings.Name, Settings.WindowWidth, Settings.WindowHeight, Settings.WindowPosx, Settings.WindowPosy)));
 		SE_ASSERT(m_AppWindow, "Window could not be created");
@@ -40,7 +42,7 @@ namespace Spaceng {
 
 		//Note :  Virtual OnInit(); Entrypoint
 	}
-
+	
 
 	Application::~Application()
 	{
@@ -55,7 +57,7 @@ namespace Spaceng {
 		{
 			DestroyAsset(m_Assets[0]);
 		}
-		//delete Myserver;
+		delete Myserver;
 		//delete Myclient;
 		delete m_Renderer;
 		m_Renderer = nullptr;

@@ -17,9 +17,7 @@ namespace Spaceng
 	private:
 		asio::io_context io_context;
 		asio::ip::tcp::resolver::results_type endpoints;
-		asio::ip::tcp::socket Socket;
-
-		
+		asio::ip::tcp::socket Client_Socket;
 	};
 
 
