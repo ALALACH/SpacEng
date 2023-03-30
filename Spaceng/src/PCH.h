@@ -17,5 +17,7 @@
 #include <locale>
 #include <codecvt>
 #include <cstdlib>
+#include <cstdint>
+#include <bitset>
 
 

@@ -1,7 +1,6 @@
 #include "PCH.h"
 #include"AssetManagerGLTF.h"
 
-
 #include "tinygltf/stb_image.h"
 
 
@@ -93,11 +92,16 @@ namespace Spaceng
 	{
 		DebugName = filename.c_str();
 		int stb_width, stb_height, stb_channels;
-		void* ImgData =stbi_load(filename.c_str(), &stb_width, &stb_height, &stb_channels, 4);
-		SE_LOG_WARN("Loading Texture: {0}", filename.c_str())
-		SE_ASSERT(ImgData, "Could not load Texture File.");
-		uint64_t ImgSize = stb_width * stb_height * 4;
+		uint8_t* ImgData =stbi_load(filename.c_str(), &stb_width, &stb_height, &stb_channels, 4);
+		//SE_LOG_WARN("Loading Texture: {0}", filename.c_str())
+		SE_ASSERT(ImgData, "Could not load Texture File.", stbi_failure_reason());
+		size_t ImgSize = stb_width * stb_height * 4; //RGB not supported 
 		
+
+#if data_VEC
+		std::vector<uint8_t> image_data_vec(ImgData, ImgData + ImgSize);
+		uint8_t* Img = image_data_vec.data();
+#endif
 
 		width = stb_width;
 		height = stb_height;
@@ -157,7 +161,7 @@ namespace Spaceng
 			//Host-Access
 			void* data;
 			VK_CHECK_RESULT(vkMapMemory(*Device, memory, 0, memReqs.size, 0, &data));
-		    memcpy(data, ImgData, ImgSize);      
+		    memcpy(data, ImgData, ImgSize);
 			vkUnmapMemory(*Device, memory);
 
 			// Setup buffer copy regions for each mip level and miplvl 0 [Full Resolution]
@@ -507,7 +511,7 @@ namespace Spaceng
 		TextureDescriptor.imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		vkFreeMemory(*Device, imagedeviceMemory, nullptr);
 		imagedeviceMemory = VK_NULL_HANDLE;
-		SE_LOG_WARN("Removing Texture: {0}", this->DebugName);
+		//SE_LOG_WARN("Removing Texture: {0}", this->DebugName);
 	}
 
 }

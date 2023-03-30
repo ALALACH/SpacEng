@@ -18,7 +18,6 @@ namespace Spaceng {
 		Myclient->connect();
 		
 
-		Myclient->SendData("Hello");
 		
 
 		m_AppWindow = std::unique_ptr<Window>
@@ -58,7 +57,7 @@ namespace Spaceng {
 			DestroyAsset(m_Assets[0]);
 		}
 		delete Myserver;
-		//delete Myclient;
+		delete Myclient;
 		delete m_Renderer;
 		m_Renderer = nullptr;
 
@@ -168,10 +167,11 @@ namespace Spaceng {
 		case Key::C:
 			m_AppWindow->SetToFullScreen();
 			break;
-		case Key::F:
-			
+		case Key::A:
+			Myclient->SendData();
 			break;
 		case Key::D:
+			Myclient->SendImgData();
 			break;
 		}
 
