@@ -21,16 +21,20 @@ prospects:
 
 -3D Models Design or Gaming (scene Rendering : to be impelemented).
 
--Systems Intercommunication (Files transmition / chat-Server).
+-Systems Intercommunication (Files transmition / chat-Server / VideoChat-Server).
 
 -IOT Applications (a work already in progress).
 
 Next Steps:
 
 -implementing Imgui "Graphics User Interface".
+
 -Rendering / Networking internal Profiling.
+
 -Creating a new Server Thread for each incoming Client.
+
 -communicating with a microcontroller using Wifi , using the server/client handles on the MC.
+
 -Sending Image Data from a camera Module.
 
 
