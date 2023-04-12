@@ -12,7 +12,7 @@ namespace Spaceng
 	}
 	Client::~Client()
 	{
-		io_context_thread_.join();
+		//io_context_thread_.join();
 	}
 	void Client::connect()
 	{
@@ -29,7 +29,7 @@ namespace Spaceng
 				SE_LOG_ERROR ("failed to connect to Server")
 			}
 		});
-		io_context_thread_ = std::thread([&] { io_context.run(); });
+		//io_context_thread_ = std::thread([&] { io_context.run(); });
 		io_context.run();
 		
 	}
@@ -39,7 +39,6 @@ namespace Spaceng
 		uint8_t* ImgData = stbi_load("C:\\Users\\AcerNitro5\\Desktop\\Spaceng\\App\\assets\\Textures\\Screen.png", &stb_width, &stb_height, &stb_channels, 4);
 		SE_ASSERT(ImgData, "Could not load Texture File.", stbi_failure_reason());
 		int ImgSize = stb_width * stb_height * 4;
-		int Data_size = 4;
 
 		asio::async_write(Client_Socket, asio::buffer(&ImgSize, sizeof(int)), [this](const asio::error_code er, std::size_t bytesTransferred)
 			{
@@ -52,7 +51,7 @@ namespace Spaceng
 					SE_LOG_INFO("Client Imagebuffer Size Sent Successfully");
 				}
 			});
-		int refactor = (ImgSize / MAX_TCP_BLOCK) + 1;
+		size_t refactor = (ImgSize / MAX_TCP_BLOCK) + 1;
 		for (int i = 0; i < refactor; i++)
 		{
 			asio::async_write(Client_Socket, asio::buffer(ImgData, ImgSize), [this](const asio::error_code er, std::size_t bytesTransferred)
@@ -67,19 +66,6 @@ namespace Spaceng
 					}
 				});
 		}
-		SE_LOG_CRITICAL("Sending Image Data..");
-		stbi_image_free(ImgData);
-		asio::async_write(Client_Socket, asio::buffer(&Data_size, sizeof(int)), [this](const asio::error_code er, std::size_t bytesTransferred)
-			{
-				if (er)
-				{
-					SE_LOG_ERROR("couldn't send Size packet: {0}", er.message());
-				}
-				else if (!er)
-				{
-					SE_LOG_INFO("Client Imagebuffer Size Sent Successfully");
-				}
-			});
 	}
 	void Client::ReceiveData()
 	{
@@ -88,25 +74,28 @@ namespace Spaceng
 	void Client::SendImgData()
 	{
 		int stb_width, stb_height, stb_channels;
-		uint8_t* ImgData = stbi_load("C:\\Users\\AcerNitro5\\Desktop\\Spaceng\\App\\assets\\Textures\\ezgif-frame-01.jpg", &stb_width, &stb_height, &stb_channels, 4);
+		uint8_t* ImgData = stbi_load("C:\\Users\\AcerNitro5\\Desktop\\Spaceng\\App\\assets\\Textures\\Screen.png", &stb_width, &stb_height, &stb_channels, 4);
 		SE_ASSERT(ImgData, "Could not load Texture File.", stbi_failure_reason());
 		int ImgSize = stb_width * stb_height * 4;
 
-		asio::async_write(Client_Socket, asio::buffer(&ImgSize, sizeof(int)), [this](const asio::error_code er, std::size_t bytesTransferred)
-			{
-				if (er)
-				{
-					SE_LOG_ERROR("couldn't send Size packet: {0}", er.message());
-				}
-				else if (!er)
-				{
-					SE_LOG_INFO("Client Imagebuffer Size Sent Successfully");
-				}
-			});
-		int refactor = (ImgSize / 65536) +1;
-		for (int i = 0; i < refactor; i++)
+		std::vector<uint8_t> data_vec(ImgData, ImgData + ImgSize);
+		//std::vector<uint8_t> data_vec{ 1,2,3,4,254 };
+		std::vector<uint8_t> StagingBuffer;
+		for (int i = 0; i < data_vec.size(); i += (int)MAX_TCP_BLOCK)
 		{
-			asio::async_write(Client_Socket, asio::buffer(ImgData, ImgSize), [this](const asio::error_code er, std::size_t bytesTransferred)
+			auto start = data_vec.begin() + i;
+			auto incremented = std::min(i + (int)MAX_TCP_BLOCK, static_cast<int>(data_vec.size()));
+			auto end = data_vec.begin() + incremented;
+			StagingBuffer.clear();
+			std::copy(start, end, std::back_inserter(StagingBuffer));
+			if (StagingBuffer.size() < MAX_TCP_BLOCK)
+			{
+				std::vector<uint8_t> FillVec(MAX_TCP_BLOCK - StagingBuffer.size() +1 ,0);
+				StagingBuffer.insert(StagingBuffer.end(), FillVec.begin(), FillVec.end());
+			}
+
+
+			asio::async_write(Client_Socket, asio::buffer(StagingBuffer, MAX_TCP_BLOCK), [this](const asio::error_code er, std::size_t bytesTransferred)
 				{
 					if (er)
 					{
@@ -118,7 +107,8 @@ namespace Spaceng
 					}
 				});
 		}
-		SE_LOG_CRITICAL("Sending Image Data..");
+		
 		stbi_image_free(ImgData);
+		SE_LOG_CRITICAL("Sending Image Data..");
 	}
 }

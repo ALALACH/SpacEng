@@ -1176,7 +1176,7 @@ namespace Spaceng
 			preparePipeline(Asset);
 		}
 	}
-	void VulkanRenderer::RefreshTexture(VkGLTFAsset* Asset, uint32_t index)
+	void VulkanRenderer::RefreshTextureFromFile(VkGLTFAsset* Asset, uint32_t index)
 	{
 		std::string Texturefilepath = Asset->Filepath + "\\assets\\Textures\\" + "ezgif-frame-0" + std::to_string(index) + ".jpg";
 		Asset->AssetTexture.Destroy(&Device);
@@ -1190,6 +1190,13 @@ namespace Spaceng
 		//todo : pop() , Destroy..
 		Asset->writeDescriptorSets.pop_back();                
 		UpdateDescriptorSet(Asset,false);
+	}
+	void VulkanRenderer::RefreshTextureFromBuffer(VkGLTFAsset* Asset, uint32_t index ,std::vector<uint8_t>& Buffer)
+	{
+		Asset->AssetTexture.Destroy(&Device);
+		Asset->AssetTexture.LoadFrom_RGBA_Buffer(Buffer, VK_FORMAT_R8G8B8A8_UNORM, &Device, &PhysicalDevice, Commandpool, Queue);
+		Asset->writeDescriptorSets.pop_back();
+		UpdateDescriptorSet(Asset, false);
 	}
 
 	void VulkanRenderer::CleanUpAsset(VkGLTFAsset* Asset)

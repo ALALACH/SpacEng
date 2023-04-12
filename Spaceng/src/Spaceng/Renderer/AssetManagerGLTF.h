@@ -35,7 +35,9 @@ namespace Spaceng
 		void loadFromFile(std::string filename, VkFormat format, VkDevice* Device, VkPhysicalDevice* PhysicalDevice, VkCommandPool pool, VkQueue copyQueue,
 			VkImageUsageFlags imageUsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT,
 			VkImageLayout ImageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL , bool linear = false , bool EnabledMip = false);
-		void LoadFrom_RGBA_Buffer();
+		void LoadFrom_RGBA_Buffer(std::vector<uint8_t>& Buffer, VkFormat format, VkDevice* Device, VkPhysicalDevice* PhysicalDevice, VkCommandPool pool, VkQueue copyQueue,
+			VkImageUsageFlags imageUsageFlags = VK_IMAGE_USAGE_SAMPLED_BIT,
+			VkImageLayout ImageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL , bool EnabledMip = false);
 
 		void Destroy(VkDevice* Device);
 

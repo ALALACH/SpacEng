@@ -43,10 +43,10 @@ namespace Spaceng
 				{
 					SE_LOG_ERROR("Couldn't initiate the Server : {0} ",er.message());
 				}
-				else
+				else if (!er)
 				{
 					SE_LOG_INFO("SERVER accepted Client..."); 
-					std::make_shared<Service>(std::move(Socket))->Handle_Request();
+					std::make_shared<Service>(std::move(Socket))->Handle_Request(this);
 				}
 				do_accept();
 			});
@@ -73,43 +73,60 @@ namespace Spaceng
 		:Service_Socket(std::move(Sock))
 	{}
 
-	void Service::Handle_Request()
+	void Service::Handle_Request(Server* Server)
 	{
 		auto self(shared_from_this());
-		if (Data_size == 4)
-		{
-			int test = 1;
-			receive_buffer = asio::buffer(&test, 4);
-		}
-		else
-		{
+		Service_Server = Server;
 		buf = new uint8_t[Data_size];
 		receive_buffer = asio::buffer(buf, Data_size);
-		}
-		
 		asio::async_read(Service_Socket, receive_buffer, [this, self](const asio::error_code er, std::size_t bytesTransferred)
 			{
 				if (er)
 				{
-					SE_LOG_ERROR("couldn't receive Size packet: {0}", er.message());
+					SE_LOG_ERROR("couldn't receive packet: {0}", er.message());
 				}
-				else if (!er && bytesTransferred == 4)
+				else if (!er)
 				{
-					int* data_ptr = asio::buffer_cast<int*>(receive_buffer);
-					int size = static_cast<int>(*data_ptr);
-					Data_size = size;
-					SE_LOG_INFO("Size : {0}", Data_size);
-					Handle_Request();
-				}
-				else if (!er && bytesTransferred > 4)
-				{
+					SE_LOG_INFO("Client Image received Successfully : {0} bytes", bytesTransferred);
+					
 					char* data_ptr = asio::buffer_cast<char*>(receive_buffer);
 					std::size_t buffer_size = asio::buffer_size(receive_buffer);
-					std::vector<uint8_t> data_vec(data_ptr, data_ptr + buffer_size); //transmit to Queue
-					SE_LOG_INFO("Client Image received Successfully : {0} bytes", bytesTransferred);
+					std::vector<uint8_t> data_vec(data_ptr, data_ptr + buffer_size);
+
+					std::mutex DataMutex;
+					DataMutex.lock();
+					Service_Server->Data.insert(Service_Server->Data.end(), std::make_move_iterator(data_vec.begin()), std::make_move_iterator(data_vec.end()));
+					DataMutex.unlock();
+					index++;
+
+					int zeroSumm = 0;
+					for (auto it = Service_Server->Data.end() - 1; it != Service_Server->Data.end() - 5; it--)
+					{
+						if (*it == 0)
+						{
+							zeroSumm++;
+						}
+						if (*it != 0)
+						{
+							zeroSumm = 0;
+						}
+						if (zeroSumm == 4)
+						{
+							SE_LOG_WARN("END OF FILE FOUND - {0} Chunks",index);
+							auto it = std::find(Service_Server->Data.rbegin(), Service_Server->Data.rend(), 255);
+							if (it != Service_Server->Data.rend()) {
+								Service_Server->Data.erase(it.base(), Service_Server->Data.end());
+							}
+							std::mutex QueueMutex;
+							QueueMutex.lock();
+							Service_Server->Queue.push(std::move(Service_Server->Data));
+							QueueMutex.unlock();
+							index = 0;
+							break;
+						}
+					}
 					delete buf;
-					//Data_size = 4;
-					Handle_Request();
+					Handle_Request(Service_Server);
 				}
 			});
 	}

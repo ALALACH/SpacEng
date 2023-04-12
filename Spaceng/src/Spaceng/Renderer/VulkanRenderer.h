@@ -47,7 +47,9 @@ namespace Spaceng
 
 
 		void prepareAsset(VkGLTFAsset* Asset ,AssetType Type);
-		void RefreshTexture(VkGLTFAsset* Asset, uint32_t index);
+		void RefreshTextureFromFile(VkGLTFAsset* Asset, uint32_t index);
+		void RefreshTextureFromBuffer(VkGLTFAsset* Asset, uint32_t index ,std::vector<uint8_t>& Buffer);
+
 		void CleanUpAsset(VkGLTFAsset* Asset);
 
 

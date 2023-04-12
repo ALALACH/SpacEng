@@ -105,14 +105,16 @@ namespace Spaceng {
 				for (Layer* layer : m_LayerStack)
 					layer->OnUpdate(m_Timestep);
 				m_Renderer->setView(); 
-
-				if (textureIndexDebugging==0 || textureIndexDebugging>50)
+#if 0
+				if (textureIndexDebugging==0 || textureIndexDebugging>244)
 					textureIndexDebugging = 1;
 
-				m_Renderer->RefreshTexture(m_Assets[0], textureIndexDebugging);
+				m_Renderer->RefreshTextureFromFile(m_Assets[0], textureIndexDebugging);
 				m_Renderer->RecordCommandBuffers(&m_Assets);
 				Render();
 				textureIndexDebugging++;
+#endif
+				Render();
 			}
 			m_Timestep = (float)glfwGetTime() - m_lastframetime;
 			m_lastframetime = (float)glfwGetTime();	
@@ -168,10 +170,16 @@ namespace Spaceng {
 			m_AppWindow->SetToFullScreen();
 			break;
 		case Key::A:
-			Myclient->SendData();
+			m_Renderer->RefreshTextureFromBuffer(m_Assets[0], textureIndexDebugging, Myserver->Queue.front());
+			m_Renderer->RecordCommandBuffers(&m_Assets);
 			break;
 		case Key::D:
 			Myclient->SendImgData();
+			
+			break;
+		case Key::F:
+			m_Renderer->RefreshTextureFromFile(m_Assets[0], 27);
+			m_Renderer->RecordCommandBuffers(&m_Assets);
 			break;
 		}
 
