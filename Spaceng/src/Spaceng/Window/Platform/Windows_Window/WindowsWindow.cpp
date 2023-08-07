@@ -137,7 +137,7 @@ namespace Spaceng {
 				MouseMovedEvent event((float)XPOS, (float)YPOS);
 				data.EventCallback(event);
 
-			});
+			});   
 		
 	}
 

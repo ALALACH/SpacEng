@@ -17,6 +17,7 @@ namespace Spaceng
 		void SendData();
 		void ReceiveData();
 	public:
+		Server* Server_Instance;
 		std::queue<std::vector<uint8_t>> Queue;
 		std::vector<uint8_t> Data;
 		uint32_t Port =0;
@@ -36,7 +37,7 @@ namespace Spaceng
 		std::string ProcessRequest(asio::streambuf& request);
 	private:
 		asio::ip::tcp::socket Service_Socket;
-		Server* Service_Server = nullptr;
+		Server* ServerRef = nullptr;
 		size_t Data_size = 65536;
 		uint8_t* buf = nullptr;
 		asio::mutable_buffer receive_buffer;

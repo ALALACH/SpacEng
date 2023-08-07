@@ -83,7 +83,7 @@ namespace Spaceng
 		SetupFunctionPtr();
 		CreatePipelineCache();
 		CreateSemaphores();
-		prepareQueueSubmit();
+		prepareQueueSubmition();
 	}
 
 	void VulkanRenderer::CreateInstance()
@@ -247,6 +247,7 @@ namespace Spaceng
 		QueueFamilyProperties.resize(QueueFamilyCount);
 		vkGetPhysicalDeviceQueueFamilyProperties(PhysicalDevice, &QueueFamilyCount, QueueFamilyProperties.data());
 		
+		
 
 		const float defaultQueuePriority(0.0f);
 		VkQueueFlags requestedQueueFlag = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT | VK_QUEUE_TRANSFER_BIT; 
@@ -307,6 +308,7 @@ namespace Spaceng
 			// Else we use the same queue
 			QueueTypeFlagBitIndex.transfer = QueueTypeFlagBitIndex.graphics;
 		}
+		SE_LOG_DEBUG("----------------------")
 		//------------------------------------------------------------------------------------------------------------
 		// Get list of supported Device extensions
 		std::vector<const char*> DeviceExtensions;
@@ -412,7 +414,7 @@ namespace Spaceng
 		}
 	}
 
-	void VulkanRenderer::prepareQueueSubmit()
+	void VulkanRenderer::prepareQueueSubmition()
 	{
 		Submitinfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 		Submitinfo.pWaitDstStageMask = &submitPipelineStages;
@@ -1189,14 +1191,14 @@ namespace Spaceng
 		//todo : if (Queue.size()) -> updatedescriptor(Queue.front())    //Thread 2
 		//todo : pop() , Destroy..
 		Asset->writeDescriptorSets.pop_back();                
-		UpdateDescriptorSet(Asset,false);
+		UpdateDescriptorSet(Asset,false ,true);
 	}
 	void VulkanRenderer::RefreshTextureFromBuffer(VkGLTFAsset* Asset, uint32_t index ,std::vector<uint8_t>& Buffer)
 	{
 		Asset->AssetTexture.Destroy(&Device);
 		Asset->AssetTexture.LoadFrom_RGBA_Buffer(Buffer, VK_FORMAT_R8G8B8A8_UNORM, &Device, &PhysicalDevice, Commandpool, Queue);
 		Asset->writeDescriptorSets.pop_back();
-		UpdateDescriptorSet(Asset, false);
+		UpdateDescriptorSet(Asset, false ,true);
 	}
 
 	void VulkanRenderer::CleanUpAsset(VkGLTFAsset* Asset)
@@ -1426,6 +1428,7 @@ namespace Spaceng
 	}
 
 
+	/*Searches for disinct Conpute or Transfer Queueu else return the default "Graphics" Queue or error */
 	uint32_t VulkanRenderer::getQueueFamilyIndex(VkQueueFlags queueFlags) const
 	{
 		// Dedicated queue for compute
@@ -1436,6 +1439,7 @@ namespace Spaceng
 			{
 				if ((QueueFamilyProperties[i].queueFlags & VK_QUEUE_COMPUTE_BIT) && ((QueueFamilyProperties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) == 0))
 				{
+					SE_LOG_DEBUG ("COMPUTE  Queue Supported")
 					return i;
 				}
 			}
@@ -1448,6 +1452,7 @@ namespace Spaceng
 			{
 				if ((QueueFamilyProperties[i].queueFlags & VK_QUEUE_TRANSFER_BIT) && ((QueueFamilyProperties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) == 0) && ((QueueFamilyProperties[i].queueFlags & VK_QUEUE_COMPUTE_BIT) == 0))
 				{
+					SE_LOG_DEBUG("TRASNFER Queue Supported")
 					return i;
 				}
 			}
@@ -1457,6 +1462,7 @@ namespace Spaceng
 		{
 			if ((QueueFamilyProperties[i].queueFlags & queueFlags) == queueFlags)
 			{
+				SE_LOG_DEBUG("GRAPHICS Queue Supported")
 				return i;
 			}
 		}

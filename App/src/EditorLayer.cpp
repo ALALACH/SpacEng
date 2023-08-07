@@ -46,9 +46,10 @@ namespace Spaceng
 	{
 		switch (e.GetKeyCode())
 		{
-		case Key::C:
-
-			break;
+			//Access Application memebers through methods implemented in Application.h
+			case Key::X:
+				
+				break;
 		}
 		return false;
 	}

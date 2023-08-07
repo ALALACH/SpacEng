@@ -17,7 +17,7 @@ namespace Spaceng {
 	class Event
 	{
 	public:
-		bool Handeled = false;
+		bool Handled = false;
 		virtual EventType GetEventType() const = 0;
 	};
 
@@ -33,9 +33,9 @@ namespace Spaceng {
 		template<typename T>
 		bool Dispatch(EventFn<T> function)
 		{
-			if (m_Event.GetEventType() == T::GetStaticType())
+			if (m_Event.GetEventType() == T::GetStaticType() && !m_Event.Handled)
 			{ 
-			m_Event.Handeled = function(*(T*)&m_Event);
+			m_Event.Handled = function(*(T*)&m_Event);
 			return true;
 			}
 			return false;

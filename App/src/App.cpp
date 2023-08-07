@@ -16,7 +16,6 @@ public:
 	{
 		EditorLayer* m_EditorLayer = new EditorLayer("EditorLayer");
 		PushLayer(m_EditorLayer);
-		
 	}	
 	
 	virtual void OnShutdown() override

@@ -29,7 +29,7 @@ namespace Spaceng
 		void CreateSemaphores();
 		void SetupFunctionPtr();
 		void getSupportedDepth();
-		void prepareQueueSubmit();
+		void prepareQueueSubmition();
 		void SetupRenderPass();
 
 

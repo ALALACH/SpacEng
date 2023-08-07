@@ -35,7 +35,7 @@ namespace Spaceng {
 
 
 		SE_LOG_INFO("Window : ""{0}: ({1}/{2})", Settings.Name, Settings.WindowWidth, Settings.WindowHeight)
-			m_AppWindow->SetEventCallback(SE_BIND_EVENT(Application::OnEvent));
+			m_AppWindow->SetEventCallback(SE_BIND_EVENT(Application::SetEvent));
 		SE_LOG_DEBUG("{}: EventCallback Enabled", m_AppWindow->GetTitle())
 			m_AppWindow->SetVsync(true); 
 
@@ -121,28 +121,24 @@ namespace Spaceng {
 		}
 	}
 	
-	void Application::OnEvent(Event& e)
+	void Application::SetEvent(Event& e)
 	{
 		EventDispatcher dispatcher(e);
 		dispatcher.Dispatch<WindowCloseEvent>(SE_BIND_EVENT(Application::OnWindowClose));
 		dispatcher.Dispatch<WindowResizeEvent>(SE_BIND_EVENT(Application::OnWindowResize));	
 		dispatcher.Dispatch<KeyPressedEvent>(SE_BIND_EVENT(Application::OnKeyPressed));
+
+		for (auto it = m_LayerStack.end(); it != m_LayerStack.begin(); )
+		{
+			(*--it)->OnEvent(e);
+			if (e.Handled)
+				break;
+		}
 	}
 
 	bool Application::OnWindowClose(WindowCloseEvent& e)
 	{
-		if (m_AppWindow->GetGlfwWindow() == e.GetWindowID())
-		{ 
-			m_Running = false;
-		}
-#if 0
-		else if
-			(window1->GetGlfwWindow() == e.GetWindowID())
-			{ 
-				window1->ShutDownWin();
-				//when updated , stop updating first
-			}
-#endif
+		m_Running = false;
 		return true;
 	}
 
@@ -151,13 +147,14 @@ namespace Spaceng {
 		//todo : Resize viewport & ImGui Pannels
 		uint32_t width = e.GetWidth(); //Assuming 1 Display per Window
 		uint32_t height = e.GetHeight();
-		m_Renderer->GenerateDisplay(&width,&height, m_AppWindow->GetVsync() , &m_Assets);
+
 		if (width == 0 && height == 0)
 		{
 			m_Minimized = true;
 		}
 		else
 		{
+			m_Renderer->GenerateDisplay(&width, &height, m_AppWindow->GetVsync(), &m_Assets);
 			m_Minimized = false;
 		}
 		return true;
@@ -175,7 +172,6 @@ namespace Spaceng {
 			break;
 		case Key::D:
 			Myclient->SendImgData();
-			
 			break;
 		case Key::F:
 			m_Renderer->RefreshTextureFromFile(m_Assets[0], 27);

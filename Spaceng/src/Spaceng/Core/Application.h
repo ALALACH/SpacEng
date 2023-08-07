@@ -32,7 +32,7 @@ namespace Spaceng {
 		void Render();
 
 		void Run();
-		void OnEvent(Event& Event);
+		void SetEvent(Event& Event);
 
 		void PushLayer(Layer* layer);
 		void PushOverlay(Layer* layer);
@@ -51,9 +51,12 @@ namespace Spaceng {
 		virtual void OnInit() {}
 		virtual void OnShutdown() {}
 
+	
 	private:
 		LayerStack m_LayerStack;
 		static Application* s_Instance;
+		ImGuiLayer* m_ImGuiLayer;
+
 
 		Server* Myserver;
 		Client* Myclient;
@@ -61,8 +64,6 @@ namespace Spaceng {
 		//the elements of an unordered_set are immutable  todo: separate dynamic and static assets
 		std::vector<VkGLTFAsset*> m_Assets;
 		std::unique_ptr<Window> m_AppWindow;
-
-		ImGuiLayer* m_ImGuiLayer;
 
 		bool m_Running = true;
 		bool m_Minimized = false;
