@@ -44,6 +44,9 @@ namespace Spaceng {
 
 		static inline Application& Get() { return *s_Instance;}
 		inline Window& GetWindow() { return *m_AppWindow; }
+		inline Server& GetServer() { return *Myserver; }
+		inline Client& GetClient() { return *Myclient; }
+		inline VulkanRenderer& GetRenderer() { return *m_Renderer; }
 		
 		std::string getProjectDirectory();
 		
