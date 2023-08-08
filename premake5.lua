@@ -133,8 +133,70 @@ project "Spaceng"
 
 
 group "Client"
-project "App"
-	location "App"
+project "Network"
+	location "Network"
+	kind "ConsoleApp"
+	language "C++"
+	cppdialect "C++20"
+	staticruntime "on"
+	
+	targetdir ("bin/" .. outputdir .. "/%{prj.name}")
+	objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
+
+	links 
+	{ 
+		"Spaceng"
+	}
+	
+	includedirs
+	{
+		"%{prj.name}/src",
+		"Spaceng/src",
+		"Spaceng/Dependency",
+		"%{IncludeDir.Vulkan}",
+		"%{IncludeDir.VulkanSDK}"
+	}
+	
+	files 
+	{ 
+		"%{prj.name}/src/**.h", 
+		"%{prj.name}/src/**.c", 
+		"%{prj.name}/src/**.hpp", 
+		"%{prj.name}/src/**.cpp" 
+	}
+
+	filter "system:windows"
+		systemversion "latest"
+				
+		defines 
+		{ 
+			"_NO_DEBUG_HEAP=1",
+			"SE_PLATFORM_WIN",
+			"_CRT_SECURE_NO_WARNINGS"
+		}
+	
+	filter "configurations:Debug"
+		defines "SE_DEBUG"
+		symbols "on"
+
+	filter "configurations:Release"
+		defines "SE_RELEASE"
+		optimize "on"
+
+	filter "configurations:Dist"
+		defines "SE_DIST"
+		optimize "on"
+
+
+
+
+
+
+
+
+
+project "VStream"
+	location "VStream"
 	kind "ConsoleApp"
 	language "C++"
 	cppdialect "C++20"
