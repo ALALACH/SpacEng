@@ -9,6 +9,7 @@ namespace Spaceng {
 	Application::Application(int argc, char** argv,const ApplicationSettings& Settings)
 	{
 		ExecutablePath = std::filesystem::canonical(std::filesystem::path(argv[0]));
+		SE_LOG_INFO("ProjectDirectory : {0}", getProjectDirectory())
 		s_Instance = this;
 
 		std::string IP = "localhost";
