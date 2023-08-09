@@ -14,7 +14,7 @@ namespace Spaceng
 		~Client();
 		void connect();
 		void SendData();
-		void SendImgData();
+		void SendImgData(std::string Path);
 		void ReceiveData();
 	private:
 	private:

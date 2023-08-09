@@ -71,10 +71,11 @@ namespace Spaceng
 	{
 
 	}
-	void Client::SendImgData()
+	void Client::SendImgData(std::string Path)
 	{
 		int stb_width, stb_height, stb_channels;
-		uint8_t* ImgData = stbi_load("C:\\Users\\AcerNitro5\\Desktop\\Spaceng\\Network\\assets\\Textures\\Screen.png", &stb_width, &stb_height, &stb_channels, 4);
+		std::string Filepath = Path + "\\assets\\Textures\\Screen.png";
+		uint8_t* ImgData = stbi_load(Filepath.c_str(), &stb_width, &stb_height, &stb_channels, 4);
 		SE_ASSERT(ImgData, "Could not load Texture File.", stbi_failure_reason());
 		int ImgSize = stb_width * stb_height * 4;
 

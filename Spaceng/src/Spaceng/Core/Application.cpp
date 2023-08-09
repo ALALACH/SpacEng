@@ -171,7 +171,7 @@ namespace Spaceng {
 			m_Renderer->RecordCommandBuffers(&m_Assets);
 			break;
 		case Key::D:
-			Myclient->SendImgData();
+			Myclient->SendImgData(getProjectDirectory());
 			break;
 		case Key::F:
 			m_Renderer->RefreshTextureFromFile(m_Assets[0], 27);

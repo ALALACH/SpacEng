@@ -45,7 +45,7 @@ namespace Spaceng
 		{
 			//Access Application memebers through methods implemented in Application.h
 			case Key::X:
-				Application::Get().GetClient().SendImgData();
+				Application::Get().GetClient().SendImgData(Application::Get().getProjectDirectory());
 				
 				break;
 		}
