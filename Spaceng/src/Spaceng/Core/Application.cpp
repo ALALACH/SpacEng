@@ -6,8 +6,9 @@ namespace Spaceng {
 
 	Application* Application::s_Instance = nullptr;
 
-	Application::Application(const ApplicationSettings& Settings)
+	Application::Application(int argc, char** argv,const ApplicationSettings& Settings)
 	{
+		ExecutablePath = std::filesystem::canonical(std::filesystem::path(argv[0]));
 		s_Instance = this;
 
 		std::string IP = "localhost";
@@ -36,10 +37,8 @@ namespace Spaceng {
 
 		SE_LOG_INFO("Window : ""{0}: ({1}/{2})", Settings.Name, Settings.WindowWidth, Settings.WindowHeight)
 			m_AppWindow->SetEventCallback(SE_BIND_EVENT(Application::SetEvent));
-		SE_LOG_DEBUG("{}: EventCallback Enabled", m_AppWindow->GetTitle())
+		SE_LOG_DEBUG("{}: Window EventCallback Binded", m_AppWindow->GetTitle())
 			m_AppWindow->SetVsync(true); 
-
-		//Note :  Virtual OnInit(); Entrypoint
 	}
 	
 
@@ -64,9 +63,9 @@ namespace Spaceng {
 	}
 
 
-	void Application::PrepareAsset(std::string name ,AssetType type,std::string filepath, bool DepthStencil)
+	void Application::PrepareAsset(std::string name ,AssetType type, bool DepthStencil)
 	{
-		VkGLTFAsset* Asset = new VkGLTFAsset(name , type , DepthStencil, filepath);
+		VkGLTFAsset* Asset = new VkGLTFAsset(name, type, DepthStencil, getProjectDirectory());
 		m_Renderer->prepareAsset(Asset ,type);
 		m_Assets.emplace_back(Asset); 
 		SE_LOG_WARN("Asset - {0}- Loaded", Asset->getName());
@@ -199,9 +198,15 @@ namespace Spaceng {
 		layer->OnAttach();
 	}
 
-	std::string Application::getProjectDirectory() 
+	std::string Application::getProjectDirectory()
 	{
-		std::filesystem::path workingDirectory = std::filesystem::current_path();
-		return workingDirectory.string();
+		std::filesystem::path Parent = ExecutablePath.parent_path().parent_path().parent_path().parent_path();
+		std::string appName = ExecutablePath.filename().string();
+		size_t lastDotPos = appName.rfind(".");
+		if (lastDotPos != std::string::npos) {
+			appName = appName.substr(0, lastDotPos);
+		}
+		std::filesystem::path ReleativePath = Parent / appName;
+		return ReleativePath.string();
 	}
 }

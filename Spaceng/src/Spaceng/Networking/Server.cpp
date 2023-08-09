@@ -46,8 +46,8 @@ namespace Spaceng
 				}
 				else if (!er)
 				{
-					SE_LOG_INFO("SERVER accepted Client..."); 
 					std::make_shared<Service>(std::move(Socket))->Handle_Request(this);
+					SE_LOG_INFO("Request Handle created for the client!");
 				}
 				do_accept();
 			});

@@ -20,10 +20,7 @@ namespace Spaceng
 
 	void EditorLayer::OnAttach()
 	{
-		std::string AssetDirectoryPath= Application::Get().getProjectDirectory();
-		//Path for textures/Models/Shaders usw..
-		LoadAsset("Screen", Video, AssetDirectoryPath, true);
-
+		LoadAsset("Screen", Video, true);
 	}
 
 	void EditorLayer::OnDetach()
@@ -49,14 +46,15 @@ namespace Spaceng
 			//Access Application memebers through methods implemented in Application.h
 			case Key::X:
 				Application::Get().GetClient().SendImgData();
+				
 				break;
 		}
 		return false;
 	}
 
 
-	void EditorLayer::LoadAsset(std::string name,AssetType type,std::string filepath, bool DepthStencil)
+	void EditorLayer::LoadAsset(std::string name,AssetType type , bool DepthStencil)
 	{
-		Application::Get().PrepareAsset(name , type , filepath , DepthStencil);
+		Application::Get().PrepareAsset(name , type , DepthStencil);
 	}
 }

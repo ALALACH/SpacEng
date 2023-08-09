@@ -11,10 +11,13 @@ namespace Spaceng
 class App : public Spaceng::Application
 {
 public:
+	App(int argc, char** argv)
+		:Application(argc, argv) {}
 
 	virtual void OnInit() override
 	{
 		EditorLayer* m_EditorLayer = new EditorLayer("EditorLayer");
+
 		PushLayer(m_EditorLayer);
 	}	
 	
@@ -22,8 +25,8 @@ public:
 	{
 	}
 };
-static Spaceng::Application* Spaceng::CreateApplication()
+static Spaceng::Application* Spaceng::CreateApplication(int argc, char** argv)
 {
-	return new App();
+	return new App(argc , argv);
 }
 }

@@ -23,11 +23,12 @@ namespace Spaceng {
 	class Application
 	{
 	public:
-		Application(const ApplicationSettings& Settings = { "SpacEng",1280,720,400,200 });
+		Application(int argc, char** argv,const ApplicationSettings& Settings = { "SpacEng",1280,720,400,200 });
 		virtual ~Application();
+		std::string getProjectDirectory();
 
 
-		void PrepareAsset(std::string name ,AssetType Type,std::string filename , bool DepthStencil);
+		void PrepareAsset(std::string name ,AssetType Type , bool DepthStencil);
 		void DestroyAsset(VkGLTFAsset* Asset);
 		void Render();
 
@@ -48,14 +49,17 @@ namespace Spaceng {
 		inline Client& GetClient() { return *Myclient; }
 		inline VulkanRenderer& GetRenderer() { return *m_Renderer; }
 		
-		std::string getProjectDirectory();
-		
 		// Implemented in Client
 		virtual void OnInit() {}
 		virtual void OnShutdown() {}
 
 	
 	private:
+		std::filesystem::path ExecutablePath;
+		bool m_Running = true;
+		bool m_Minimized = false;
+
+
 		LayerStack m_LayerStack;
 		static Application* s_Instance;
 		ImGuiLayer* m_ImGuiLayer;
@@ -68,8 +72,6 @@ namespace Spaceng {
 		std::vector<VkGLTFAsset*> m_Assets;
 		std::unique_ptr<Window> m_AppWindow;
 
-		bool m_Running = true;
-		bool m_Minimized = false;
 		bool Asset_Nr_Changed = false;
 		uint32_t textureIndexDebugging=0;
 		float m_Timestep=0.0f, m_lastframetime=0.0f;
@@ -89,6 +91,6 @@ namespace Spaceng {
 	};
 
 	//implemented in client
-	Application* CreateApplication();
+	Application* CreateApplication(int argc, char** argv);
 
 }

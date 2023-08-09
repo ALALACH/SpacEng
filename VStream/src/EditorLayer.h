@@ -17,7 +17,7 @@ namespace Spaceng
 		virtual void OnUpdate(float Timestep) override;
 		virtual void OnEvent(Event& Event) override;
 		bool OnKeyPressed(KeyPressedEvent& e);
-		void LoadAsset(std::string name, AssetType type, std::string filepath, bool DepthStencil);
+		void LoadAsset(std::string name, AssetType type ,bool DepthStencil);
 	private:
 		std::string m_DebugName;
 	};
