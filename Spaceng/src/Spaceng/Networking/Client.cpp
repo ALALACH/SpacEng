@@ -73,8 +73,8 @@ namespace Spaceng
 	}
 	void Client::SendImgData(std::string Path)
 	{
+		std::string Filepath = Path + "\\assets\\Textures\\Screen3.jpg";
 		int stb_width, stb_height, stb_channels;
-		std::string Filepath = Path + "\\assets\\Textures\\Screen.png";
 		uint8_t* ImgData = stbi_load(Filepath.c_str(), &stb_width, &stb_height, &stb_channels, 4);
 		SE_ASSERT(ImgData, "Could not load Texture File.", stbi_failure_reason());
 		int ImgSize = stb_width * stb_height * 4;
@@ -83,8 +83,9 @@ namespace Spaceng
 	
 
 		size_t Chunks = (ImgSize % MAX_TCP_BLOCK == 0 ) ? (ImgSize / MAX_TCP_BLOCK) : (ImgSize / MAX_TCP_BLOCK +1);
+		SE_ASSERT(Chunks < 255, "Data too Big to Transmit : Reform")
 		std::string Width;
-		SE_ASSERT(stb_width>100,"reform")
+		SE_ASSERT(stb_width>100,"relatively Small : Reform")
 		(1000 <= stb_width && stb_width < 10000) ? Width = std::to_string(stb_width) : Width = "0" + std::to_string(stb_width);
 		uint8_t w0 = static_cast<uint8_t>(Width[0] - '0');
 		uint8_t w1 = static_cast<uint8_t>(Width[1] - '0');
@@ -92,7 +93,7 @@ namespace Spaceng
 		uint8_t w3 = static_cast<uint8_t>(Width[3] - '0');
 
 		std::string Height;
-		SE_ASSERT(stb_height > 100, "reform")
+		SE_ASSERT(stb_height > 100, "relatively small :Reform")
 		(1000 <= stb_height && stb_height < 10000) ? Height = std::to_string(stb_height) : Height = "0"+ std::to_string(stb_height);
 		uint8_t h0 = static_cast<uint8_t>(Height[0] - '0');
 		uint8_t h1 = static_cast<uint8_t>(Height[1] - '0');

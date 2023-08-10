@@ -494,8 +494,6 @@ namespace Spaceng
 			mipLevels = 1;
 		}
 
-
-
 		//format : check Availability
 		VkFormatProperties formatProperties;
 		vkGetPhysicalDeviceFormatProperties(*PhysicalDevice, format, &formatProperties);
