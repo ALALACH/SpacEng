@@ -463,22 +463,30 @@ namespace Spaceng
 	void Texture::LoadFrom_RGBA_Buffer(std::vector<uint8_t>& Buffer,VkFormat format, VkDevice* Device, VkPhysicalDevice* PhysicalDevice, VkCommandPool pool, VkQueue copyQueue,
 		VkImageUsageFlags imageUsageFlags, VkImageLayout ImageLayout, bool EnabledMip)
 	{
-		int stb_width =1600 , stb_height=900, stb_channels=4;
-		//unsigned char* ImgData = stbi_load_from_memory(Buffer.data(), Buffer.size(), &stb_width, &stb_height, &stb_channels, 0);
-		
+		int Value = 0;
+		int multiplier = 1000;
+		for (auto it = Buffer.begin()+12; it != Buffer.begin()+15; ++it) {
+			Value += (*it) * multiplier;
+			multiplier /= 10;
+		}
+		height = Value;
+		Value = 0;
+		multiplier = 1000;
+		for (auto it = Buffer.begin() + 8; it != Buffer.begin() + 11; ++it) {
+			Value += (*it) * multiplier;
+			multiplier /= 10;
+		}
+		width = Value;
 
-		//SE_LOG_WARN("Loading Texture: {0}", filename.c_str())
-		//SE_ASSERT(ImgData, "Could not load Texture File.", stbi_failure_reason());
-		//size_t ImgSize = stb_width * stb_height * 4; //RGB not supported 
-		size_t ImgSize = Buffer.size();
-		
+		std::vector<uint8_t> CopyBuffer; //remove-Header
+		CopyBuffer.assign(Buffer.begin() + 16, Buffer.end());
+		size_t ImgSize = CopyBuffer.size();
 
-		width = stb_width;
-		height = stb_height;
+
 
 		if (EnabledMip)
 		{
-			mipLevels = (uint32_t)std::floor(std::log2(glm::min(stb_width, stb_height))) + 1;
+			mipLevels = (uint32_t)std::floor(std::log2(glm::min(width, height))) + 1;
 		}
 		else
 		{
@@ -528,7 +536,7 @@ namespace Spaceng
 		//Host-Access
 		void* data;
 		VK_CHECK_RESULT(vkMapMemory(*Device, memory, 0, memReqs.size, 0, &data));
-		memcpy(data, Buffer.data(), ImgSize);
+		memcpy(data, CopyBuffer.data(), ImgSize);
 		vkUnmapMemory(*Device, memory);
 
 		// Setup buffer copy regions for each mip level and miplvl 0 [Full Resolution]

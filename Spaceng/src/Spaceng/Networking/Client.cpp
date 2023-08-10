@@ -80,7 +80,38 @@ namespace Spaceng
 		int ImgSize = stb_width * stb_height * 4;
 
 		std::vector<uint8_t> data_vec(ImgData, ImgData + ImgSize);
-		//std::vector<uint8_t> data_vec{ 1,2,3,4,254 };
+	
+
+		size_t Chunks = (ImgSize % MAX_TCP_BLOCK == 0 ) ? (ImgSize / MAX_TCP_BLOCK) : (ImgSize / MAX_TCP_BLOCK +1);
+		std::string Width;
+		SE_ASSERT(stb_width>100,"reform")
+		(1000 <= stb_width && stb_width < 10000) ? Width = std::to_string(stb_width) : Width = "0" + std::to_string(stb_width);
+		uint8_t w0 = static_cast<uint8_t>(Width[0] - '0');
+		uint8_t w1 = static_cast<uint8_t>(Width[1] - '0');
+		uint8_t w2 = static_cast<uint8_t>(Width[2] - '0');
+		uint8_t w3 = static_cast<uint8_t>(Width[3] - '0');
+
+		std::string Height;
+		SE_ASSERT(stb_height > 100, "reform")
+		(1000 <= stb_height && stb_height < 10000) ? Height = std::to_string(stb_height) : Height = "0"+ std::to_string(stb_height);
+		uint8_t h0 = static_cast<uint8_t>(Height[0] - '0');
+		uint8_t h1 = static_cast<uint8_t>(Height[1] - '0');
+		uint8_t h2 = static_cast<uint8_t>(Height[2] - '0');
+		uint8_t h3 = static_cast<uint8_t>(Height[3] - '0');
+
+		bool Fill = false;
+		if (ImgSize % MAX_TCP_BLOCK != 0)
+		{
+			size_t Remaining = ImgSize - (Chunks - 1) * MAX_TCP_BLOCK;
+			size_t toFill = MAX_TCP_BLOCK - Remaining;
+			if (toFill>4)
+			Fill = true;
+		}
+		std::vector<uint8_t> Header = { 0,0,0,0,0,0,static_cast<uint8_t>(Chunks),static_cast<uint8_t>((Fill) ? 1 : 0),w0,w1,w2,w3,h0,h1,h2,h3 };
+		data_vec.insert(data_vec.begin(), Header.begin(), Header.end());
+
+		
+
 		std::vector<uint8_t> StagingBuffer;
 		for (int i = 0; i < data_vec.size(); i += (int)MAX_TCP_BLOCK)
 		{
@@ -91,7 +122,7 @@ namespace Spaceng
 			std::copy(start, end, std::back_inserter(StagingBuffer));
 			if (StagingBuffer.size() < MAX_TCP_BLOCK)
 			{
-				std::vector<uint8_t> FillVec(MAX_TCP_BLOCK - StagingBuffer.size() +1 ,0);
+				std::vector<uint8_t> FillVec(MAX_TCP_BLOCK - StagingBuffer.size() ,0);
 				StagingBuffer.insert(StagingBuffer.end(), FillVec.begin(), FillVec.end());
 			}
 
@@ -101,6 +132,7 @@ namespace Spaceng
 					if (er)
 					{
 						SE_LOG_ERROR("couldn't send packet: {0}", er.message());
+						//TODO : handle all error cases and reset operations.
 					}
 					else if (!er)
 					{

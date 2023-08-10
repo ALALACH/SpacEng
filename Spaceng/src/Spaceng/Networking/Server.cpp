@@ -78,51 +78,53 @@ namespace Spaceng
 	{
 		auto self(shared_from_this());
 		ServerRef = Server;
-		buf = new uint8_t[Data_size];
-		receive_buffer = asio::buffer(buf, Data_size);
+
+		buf = new uint8_t[MAX_TCP_BLOCK];
+		receive_buffer = asio::buffer(buf, MAX_TCP_BLOCK);
+
 		asio::async_read(Service_Socket, receive_buffer, [this, self](const asio::error_code er, std::size_t bytesTransferred)
 			{
 				if (er)
 				{
 					SE_LOG_ERROR("couldn't receive packet: {0}", er.message());
+					//TODO : handle all error cases and reset operations.
 				}
 				else if (!er)
 				{
-					SE_LOG_INFO("Client Image received Successfully : {0} bytes", bytesTransferred);
+					SE_LOG_INFO("Client Packet received Successfully : {0} bytes", bytesTransferred);
 					
 					char* data_ptr = asio::buffer_cast<char*>(receive_buffer);
 					std::size_t buffer_size = asio::buffer_size(receive_buffer);
 					std::vector<uint8_t> data_vec(data_ptr, data_ptr + buffer_size);
 
-					ServerRef->Data.insert(ServerRef->Data.end(), std::make_move_iterator(data_vec.begin()), std::make_move_iterator(data_vec.end()));
+					if (index == 0)
+					{
+						bool ImgTag = std::all_of(data_vec.begin(), data_vec.begin() + 6, [](int val) {return val == 0; }); //000000 - ImageTag
+						if (ImgTag)
+						{
+							Chunks = data_vec[6];
+						}
+					}
 					index++;
 
-					int zeroSumm = 0;
-					for (auto it = ServerRef->Data.end() - 1; it != ServerRef->Data.end() - 5; it--)
+					ServerRef->Data.insert(ServerRef->Data.end(), std::make_move_iterator(data_vec.begin()), std::make_move_iterator(data_vec.end()));
+					if (index == Chunks)
 					{
-						if (*it == 0)
+						if (ServerRef->Data[7] == 1)
 						{
-							zeroSumm++;
-						}
-						if (*it != 0)
-						{
-							zeroSumm = 0;
-						}
-						if (zeroSumm == 4)
-						{
-							SE_LOG_WARN("END OF FILE FOUND - {0} Chunks",index);
 							auto it = std::find(ServerRef->Data.rbegin(), ServerRef->Data.rend(), 255);
 							if (it != ServerRef->Data.rend()) {
 								ServerRef->Data.erase(it.base(), ServerRef->Data.end());
 							}
-							std::mutex QueueMutex;
-							QueueMutex.lock();
-							ServerRef->Queue.push(std::move(ServerRef->Data));
-							QueueMutex.unlock();
-							index = 0;
-							break;
+							SE_LOG_WARN("END OF FILE FOUND - {0} Chunks", index);
 						}
+						std::mutex QueueMutex;
+						QueueMutex.lock();
+						ServerRef->Queue.push(std::move(ServerRef->Data));
+						QueueMutex.unlock();
+						index = 0;
 					}
+
 					delete buf;
 					Handle_Request(ServerRef);
 				}

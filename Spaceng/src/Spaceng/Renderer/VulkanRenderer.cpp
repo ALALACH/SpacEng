@@ -1193,7 +1193,7 @@ namespace Spaceng
 		Asset->writeDescriptorSets.pop_back();                
 		UpdateDescriptorSet(Asset,false ,true);
 	}
-	void VulkanRenderer::RefreshTextureFromBuffer(VkGLTFAsset* Asset, uint32_t index ,std::vector<uint8_t>& Buffer)
+	void VulkanRenderer::RefreshTextureFromBuffer(VkGLTFAsset* Asset ,std::vector<uint8_t>& Buffer)
 	{
 		Asset->AssetTexture.Destroy(&Device);
 		Asset->AssetTexture.LoadFrom_RGBA_Buffer(Buffer, VK_FORMAT_R8G8B8A8_UNORM, &Device, &PhysicalDevice, Commandpool, Queue);

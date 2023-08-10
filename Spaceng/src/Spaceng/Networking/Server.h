@@ -38,17 +38,15 @@ namespace Spaceng
 	private:
 		asio::ip::tcp::socket Service_Socket;
 		Server* ServerRef = nullptr;
-		size_t Data_size = 65536;
 		uint8_t* buf = nullptr;
 		asio::mutable_buffer receive_buffer;
 		std::size_t MAX_TCP_BLOCK = 65536;
 
 		std::string m_response;
 		asio::streambuf m_request;
+
 		int index = 0;
-		
-
-
+		uint8_t Chunks = 0;
 	};
 
 

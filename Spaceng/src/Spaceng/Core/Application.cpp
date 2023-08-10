@@ -9,7 +9,7 @@ namespace Spaceng {
 	Application::Application(int argc, char** argv,const ApplicationSettings& Settings)
 	{
 		ExecutablePath = std::filesystem::canonical(std::filesystem::path(argv[0]));
-		SE_LOG_INFO("ProjectDirectory : {0}", getProjectDirectory())
+		SE_LOG_WARN("ProjectDirectory : {0}", getProjectDirectory())
 		s_Instance = this;
 
 		std::string IP = "localhost";
@@ -167,7 +167,7 @@ namespace Spaceng {
 			m_AppWindow->SetToFullScreen();
 			break;
 		case Key::A:
-			m_Renderer->RefreshTextureFromBuffer(m_Assets[0], textureIndexDebugging, Myserver->Queue.front());
+			m_Renderer->RefreshTextureFromBuffer(m_Assets[0], Myserver->Queue.front());
 			m_Renderer->RecordCommandBuffers(&m_Assets);
 			break;
 		case Key::D:
