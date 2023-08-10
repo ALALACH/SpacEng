@@ -463,6 +463,7 @@ namespace Spaceng
 	void Texture::LoadFrom_RGBA_Buffer(std::vector<uint8_t>& Buffer,VkFormat format, VkDevice* Device, VkPhysicalDevice* PhysicalDevice, VkCommandPool pool, VkQueue copyQueue,
 		VkImageUsageFlags imageUsageFlags, VkImageLayout ImageLayout, bool EnabledMip)
 	{
+		//Extracting Values
 		int Value = 0;
 		int multiplier = 1000;
 		for (auto it = Buffer.begin()+12; it != Buffer.begin()+15; ++it) {
