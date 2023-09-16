@@ -18,4 +18,4 @@ colorama.init()
 os.chdir('../')
 
 print(f"{Style.BRIGHT}{Back.GREEN}Generating Visual Studio 2022 solution.{Style.RESET_ALL}")
-subprocess.call(["vendor/bin/premake5.exe", "vs2022"])
+subprocess.call(["vendor/binary/premake5.exe", "vs2022"])

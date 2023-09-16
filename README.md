@@ -40,5 +40,5 @@ Next Steps:
 
 How to Run the Project:
 Supporting Visual Studio 17+ at the moment
-- Win-GenProjects.bat in script folder.
+- Win-GenProjects.bat in script folder (requires python installed.)
 - Run Spaceng.sln in ProjectDirectory

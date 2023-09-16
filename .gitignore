@@ -10,6 +10,6 @@ bin-int/
 **.vcxproj.filters
 **.vcxproj.user
 **.csproj
-/App/assets/Shaders/texture.frag
-/App/assets/Shaders/texture.vert
+#/App/assets/Shaders/texture.frag
+#/App/assets/Shaders/texture.vert
 *.jpg
