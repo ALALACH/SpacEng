@@ -35,7 +35,7 @@ namespace Spaceng
 
 
 		void CreateSurfacePrimitives(GLFWwindow* Window);
-		void CreateDisplayTemplate(uint32_t* width, uint32_t* height, bool vsync);
+		void CreateVkDisplayTemplate(uint32_t* width, uint32_t* height, bool vsync);
 
 		void setView();
 		void prepareUniformBuffer(VkGLTFAsset* Asset, bool mapAccess, bool descriptorAcess = true);

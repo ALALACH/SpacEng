@@ -106,7 +106,7 @@ namespace Spaceng
 						}
 					}
 					index++;
-
+					//todo : Different types of Data..
 					ServerRef->Data.insert(ServerRef->Data.end(), std::make_move_iterator(data_vec.begin()), std::make_move_iterator(data_vec.end()));
 					if (index == Chunks)
 					{

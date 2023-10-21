@@ -48,6 +48,7 @@ namespace Spaceng {
 		inline Server& GetServer() { return *Myserver; }
 		inline Client& GetClient() { return *Myclient; }
 		inline VulkanRenderer& GetRenderer() { return *m_Renderer; }
+		inline std::vector<VkGLTFAsset*>& GetAssets() { return m_Assets; }
 		
 		// Implemented in Client
 		virtual void OnInit() {}

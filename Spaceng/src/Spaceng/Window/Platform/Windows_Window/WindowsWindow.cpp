@@ -48,7 +48,7 @@ namespace Spaceng {
 
 		
 		Renderer->CreateSurfacePrimitives(m_Window);
-		Renderer->CreateDisplayTemplate(&Window_Data.Width,&Window_Data.Height,Window_Data.Vsync);
+		Renderer->CreateVkDisplayTemplate(&Window_Data.Width,&Window_Data.Height,Window_Data.Vsync);
 
 		glfwSetWindowUserPointer(m_Window, &Window_Data);
 

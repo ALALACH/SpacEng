@@ -155,8 +155,9 @@ namespace Spaceng
 			//Host-Access
 			void* data;
 			VK_CHECK_RESULT(vkMapMemory(*Device, memory, 0, memReqs.size, 0, &data));
-		    memcpy(data, ImgData, ImgSize);
+		    memcpy(data, ImgData, ImgSize); //a copy of the data is now available for Device.
 			vkUnmapMemory(*Device, memory);
+			
 
 			// Setup buffer copy regions for each mip level and miplvl 0 [Full Resolution]
 			std::vector<VkBufferImageCopy> bufferCopyRegions;

@@ -20,7 +20,7 @@ namespace Spaceng
 
 	void EditorLayer::OnAttach()
 	{
-		LoadAsset("Screen", Video, true);
+		LoadAsset("Screen", Video_JPG, true);
 
 	}
 
@@ -31,7 +31,7 @@ namespace Spaceng
 
 	void EditorLayer::OnUpdate(float Timestep)
 	{
-		Application::Get().GetWindow().UpdateTittle("SpaceEngine");
+		Application::Get().GetWindow().UpdateTittle("SpaceEngine : Vstream");
 	}
 
 	void EditorLayer::OnEvent(Event& Event)
@@ -46,8 +46,13 @@ namespace Spaceng
 		{
 			//Access Application memebers through methods implemented in Application.h
 			case Key::X:
-				
-				break;
+
+				for (int textureIndexDebugging = 1; textureIndexDebugging < 50; textureIndexDebugging++)
+				{
+					Application::Get().GetRenderer().RefreshTextureFromFile(Application::Get().GetAssets()[0], textureIndexDebugging);
+					Application::Get().GetRenderer().RecordCommandBuffers(&Application::Get().GetAssets());
+					Application::Get().GetRenderer().render(&Application::Get().GetAssets());
+				}
 		}
 		return false;
 	}

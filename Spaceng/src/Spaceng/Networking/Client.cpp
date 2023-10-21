@@ -81,7 +81,7 @@ namespace Spaceng
 
 		std::vector<uint8_t> data_vec(ImgData, ImgData + ImgSize);
 	
-
+		//Extracting Image Header
 		size_t Chunks = (ImgSize % MAX_TCP_BLOCK == 0 ) ? (ImgSize / MAX_TCP_BLOCK) : (ImgSize / MAX_TCP_BLOCK +1);
 		SE_ASSERT(Chunks < 255, "Data too Big to Transmit : Reform")
 		std::string Width;

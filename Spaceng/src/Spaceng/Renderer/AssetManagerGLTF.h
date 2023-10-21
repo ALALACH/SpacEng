@@ -17,7 +17,8 @@ namespace Spaceng
 
 	enum AssetType
 	{
-		Video,
+		Video_JPG,
+		Video_PNG,
 		model_type,
 		Simple_Mesh_type
 	};

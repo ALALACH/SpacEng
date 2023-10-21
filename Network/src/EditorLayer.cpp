@@ -20,7 +20,7 @@ namespace Spaceng
 
 	void EditorLayer::OnAttach()
 	{
-		LoadAsset("Screen", Video, true);
+		LoadAsset("Screen", Video_PNG, true);
 	}
 
 	void EditorLayer::OnDetach()
@@ -30,7 +30,7 @@ namespace Spaceng
 
 	void EditorLayer::OnUpdate(float Timestep)
 	{
-		Application::Get().GetWindow().UpdateTittle("SpaceEngine");
+		Application::Get().GetWindow().UpdateTittle("SpaceEngine : Network");
 	}
 
 	void EditorLayer::OnEvent(Event& Event)

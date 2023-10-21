@@ -88,9 +88,9 @@ namespace Spaceng
 
 	void VulkanRenderer::CreateInstance()
 	{
-		if (Validation)
+		if (Validation && false)
 		{
-			//SetEnvironmentVariableA("VK_INSTANCE_LAYERS", "VK_LAYER_LUNARG_api_dump");
+			SetEnvironmentVariableA("VK_INSTANCE_LAYERS", "VK_LAYER_LUNARG_api_dump");
 		}
 		VkApplicationInfo appinfo = {};
 		appinfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -650,7 +650,7 @@ namespace Spaceng
 	}
 
 
-	void VulkanRenderer::CreateDisplayTemplate(uint32_t *width, uint32_t *height, bool vsync)
+	void VulkanRenderer::CreateVkDisplayTemplate(uint32_t *width, uint32_t *height, bool vsync)
 	{
 		VkSwapchainKHR OldSwapChain = Swapchain;
 
@@ -1168,12 +1168,21 @@ namespace Spaceng
 			std::string Modelfilepath = Asset->Filepath + "\\assets\\Models\\" + Asset->getName() + ".gltf"; 
 			Asset->AssetModel.LoadFromFile(&Device, &PhysicalDevice , Modelfilepath);
 		}
-		else if (Type == Video)
+		else if (Type == Video_JPG)
 		{
-			std::string Texturefilepath = Asset->Filepath + "\\assets\\Textures\\" + Asset->getName() + ".png"; 
+			std::string Texturefilepath = Asset->Filepath + "\\assets\\Textures\\" + Asset->getName() + ".jpg"; 
 			Asset->AssetTexture.loadFromFile(Texturefilepath, VK_FORMAT_R8G8B8A8_UNORM, &Device, &PhysicalDevice, Commandpool, Queue);
 			Asset->AssetModel.generateQuad(&Device, &PhysicalDevice);
 			prepareUniformBuffer(Asset,true);
+			prepareDescriptors(Asset);
+			preparePipeline(Asset);
+		}
+		else if (Type == Video_PNG)
+		{
+			std::string Texturefilepath = Asset->Filepath + "\\assets\\Textures\\" + Asset->getName() + ".png";
+			Asset->AssetTexture.loadFromFile(Texturefilepath, VK_FORMAT_R8G8B8A8_UNORM, &Device, &PhysicalDevice, Commandpool, Queue);
+			Asset->AssetModel.generateQuad(&Device, &PhysicalDevice);
+			prepareUniformBuffer(Asset, true);
 			prepareDescriptors(Asset);
 			preparePipeline(Asset);
 		}
@@ -1278,7 +1287,7 @@ namespace Spaceng
 	void VulkanRenderer::GenerateDisplay(uint32_t* width, uint32_t* height, bool vsync, std::vector<VkGLTFAsset*>* Assets)
 	{
 		vkDeviceWaitIdle(Device);
-		CreateDisplayTemplate(width, height, vsync);
+		CreateVkDisplayTemplate(width, height, vsync);
 		//todo: GUI Aspectratio
 		RecordCommandBuffers(Assets);
 		vkDeviceWaitIdle(Device);
